@@ -1901,12 +1901,12 @@ function updatePhysics(dt) {
     SIM.altHold = SIM.pos.y;
   }
 
-  // Smooth yaw input with soft ramp — coherente con pitch/roll, evita giros bruscos
+  // Smooth yaw input with soft ramp — Q = rotar izquierda, E = rotar derecha
   if (KEYS['e']) SIM.input.yaw = ema(SIM.input.yaw, -0.9, 0.16);
   else if (KEYS['q']) SIM.input.yaw = ema(SIM.input.yaw, 0.9, 0.16);
   else SIM.input.yaw *= 0.85;
 
-  // Smooth pitch/roll input with soft ramp
+  // Smooth pitch/roll input — W=adelante, S=atrás, A=izquierda, D=derecha
   if (KEYS['w']) SIM.input.pitch = ema(SIM.input.pitch, -0.85 * mc.rot, 0.15);
   else if (KEYS['s']) SIM.input.pitch = ema(SIM.input.pitch, 0.85 * mc.rot, 0.15);
   else SIM.input.pitch *= 0.80;
@@ -1934,6 +1934,7 @@ function updatePhysics(dt) {
   const sinPitch = Math.sin(SIM.rot.pitch);
 
   const fwd = -sinPitch * mc.sp;
+  // roll negativo (joystick derecha) → sde positivo → vel.x += cosYaw * sde → +X = derecha visual
   const sde = -SIM.rot.roll * mc.sp * 1.8;
 
   // Smooth acceleration — apply wind
@@ -2553,9 +2554,11 @@ async function init() {
 
   setupJoystick('js-left', 'js-left-knob',
     (x, y) => {
-      SIM.input.yaw = x * 0.8;
+      // x positivo (derecha) = yaw negativo = rotación a la derecha (Three.js: yaw neg = horario)
+      SIM.input.yaw = -x * 0.8;
       if (Math.abs(y) > 0.05) {
         SIM._jsThrottleActive = true;
+        // y negativo (arriba) = subir, y positivo (abajo) = bajar
         SIM.input.throttle = Math.max(-0.5, Math.min(1, SIM.input.throttle - y * 0.04));
       } else {
         SIM._jsThrottleActive = false;
@@ -2565,7 +2568,12 @@ async function init() {
   );
 
   setupJoystick('js-right', 'js-right-knob',
-    (x, y) => { SIM.input.pitch = y * 0.85; SIM.input.roll = x * 0.85; },
+    (x, y) => {
+      // y negativo (arriba) = avanzar, y positivo (abajo) = retroceder
+      SIM.input.pitch = y * 0.85;
+      // x positivo (derecha) = ir a la derecha: roll negativo mueve a la derecha
+      SIM.input.roll = -x * 0.85;
+    },
     () => { SIM.input.pitch = 0; SIM.input.roll = 0; }
   );
 
