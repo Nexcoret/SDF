@@ -149,49 +149,9 @@
     box-shadow: 0 0 6px var(--green);
   }
 
-  /* ── COMPASS ── */
-  #compass-wrap {
-    position: fixed; bottom: 90px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 4px;
-  }
-
-  #compass-ring {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    border: 2px solid var(--border-bright);
-    background: radial-gradient(circle at center, rgba(0,20,0,0.9), rgba(0,8,0,0.95));
-    position: relative;
-    box-shadow: 0 0 12px rgba(0,255,65,0.2), inset 0 0 12px rgba(0,0,0,0.5);
-  }
-
-  #compass-needle {
-    position: absolute; top: 50%; left: 50%;
-    width: 2px; height: 32px;
-    margin-left: -1px; margin-top: -32px;
-    transform-origin: bottom center;
-    background: linear-gradient(180deg, var(--red) 50%, rgba(0,255,65,0.6) 50%);
-    transition: transform 0.1s linear;
-    border-radius: 1px 1px 0 0;
-  }
-
-  .compass-mark {
-    position: absolute; font-size: 9px; font-weight: 700;
-    color: rgba(0,255,65,0.7); width: 12px; text-align: center;
-  }
-
-  #compass-hdg {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; color: var(--green);
-    text-shadow: 0 0 6px var(--green);
-    letter-spacing: 1px;
-  }
-
   /* ── ADI ── */
   #adi-wrap {
-    position: fixed; bottom: 90px; right: 16px;
+    position: fixed; bottom: 120px; right: 16px;
     z-index: 100; width: 110px; height: 110px;
   }
   #adi-canvas { border-radius: 50%; }
@@ -214,7 +174,7 @@
   /* ── BOTTOM CONTROLS ── */
   #bottom-controls {
     position: fixed; bottom: 0; left: 0; right: 0;
-    height: 82px;
+    height: 112px;
     background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,5,0,0.8) 100%);
     border-top: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
@@ -231,7 +191,7 @@
     text-transform: uppercase;
   }
   .joystick-outer {
-    width: 72px; height: 72px;
+    width: 92px; height: 92px;
     border-radius: 50%;
     border: 2px solid var(--border-bright);
     background: radial-gradient(circle at center, #0a1a0a, #050d05);
@@ -241,7 +201,7 @@
     touch-action: none;
   }
   .joystick-inner {
-    width: 28px; height: 28px;
+    width: 38px; height: 38px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #1a3a1a, #0a1a0a);
     border: 1px solid var(--green-dim);
@@ -325,7 +285,7 @@
   .gps-dot.active { opacity: 1; box-shadow: 0 0 4px var(--green); }
 
   #key-hints {
-    position: fixed; bottom: 90px; left: 8px;
+    position: fixed; bottom: 120px; left: 8px;
     z-index: 100;
     background: var(--panel);
     border: 1px solid var(--border);
@@ -352,11 +312,11 @@
   .corner { position: fixed; width: 20px; height: 20px; z-index: 101; pointer-events: none; }
   .corner-tl { top: 52px; left: 4px; border-top: 1px solid var(--green-dim); border-left: 1px solid var(--green-dim); }
   .corner-tr { top: 52px; right: 4px; border-top: 1px solid var(--green-dim); border-right: 1px solid var(--green-dim); }
-  .corner-bl { bottom: 86px; left: 4px; border-bottom: 1px solid var(--green-dim); border-left: 1px solid var(--green-dim); }
-  .corner-br { bottom: 86px; right: 4px; border-bottom: 1px solid var(--green-dim); border-right: 1px solid var(--green-dim); }
+  .corner-bl { bottom: 116px; left: 4px; border-bottom: 1px solid var(--green-dim); border-left: 1px solid var(--green-dim); }
+  .corner-br { bottom: 116px; right: 4px; border-bottom: 1px solid var(--green-dim); border-right: 1px solid var(--green-dim); }
 
   #throttle-bar {
-    position: fixed; left: 180px; top: 56px; bottom: 88px;
+    position: fixed; left: 180px; top: 56px; bottom: 118px;
     width: 14px; z-index: 100;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
   }
@@ -539,18 +499,6 @@
   <div class="thr-track"><div id="thr-fill"></div></div>
 </div>
 
-<!-- COMPASS -->
-<div id="compass-wrap">
-  <div id="compass-ring">
-    <div id="compass-needle"></div>
-    <span class="compass-mark" style="top:3px;left:50%;transform:translateX(-50%)">N</span>
-    <span class="compass-mark" style="bottom:3px;left:50%;transform:translateX(-50%)">S</span>
-    <span class="compass-mark" style="left:3px;top:50%;transform:translateY(-50%)">W</span>
-    <span class="compass-mark" style="right:3px;top:50%;transform:translateY(-50%)">E</span>
-  </div>
-  <div id="compass-hdg">HDG 000°</div>
-</div>
-
 <!-- ADI canvas -->
 <div id="adi-wrap">
   <canvas id="adi-canvas" width="110" height="110"></canvas>
@@ -699,8 +647,8 @@ function initThree() {
   scene.fog = new THREE.FogExp2(0x8bbfd4, 0.0018);
 
   clock = new THREE.Clock();
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 6000);
-  camera.position.set(0, 8, 18);
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 6000);
+  camera.position.set(0, 0.35, 2.9);
 
   // ── ENHANCED LIGHTING SETUP ──
   // Soft ambient (blue-sky bounce)
@@ -1025,7 +973,9 @@ function getTerrainHeight(x, z) {
 // ── DRONE (identical high-quality model) ──
 function buildDrone() {
   const group = new THREE.Group();
-  const S = 2.2;
+  // Escala realista: ~1.7m punta-a-punta de hélice (dron empresarial tipo
+  // inspección/seguridad), muy por debajo de árboles (6-10m) y torres (18-48m)
+  const S = 0.65;
   const COL_TOP    = 0xcdcfd2;
   const COL_SIDE   = 0x999b9e;
   const COL_DARK   = 0x232323;
@@ -1228,7 +1178,7 @@ function buildDrone() {
   group.userData.gimbalGroup = gimbalGroup;
   droneMesh = group;
 
-  const sGeo = new THREE.CircleGeometry(1.2, 20);
+  const sGeo = new THREE.CircleGeometry(0.4, 20);
   const sMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent:true, opacity:0.4 });
   shadowPlane = new THREE.Mesh(sGeo, sMat);
   shadowPlane.rotation.x = -Math.PI/2;
@@ -1468,7 +1418,7 @@ function updatePhysics(dt) {
   if (thrKeyDown) SIM.input.throttle = Math.max(SIM.input.throttle - 0.018, -0.5);
 
   const groundH0 = getTerrainHeight(SIM.pos.x, SIM.pos.z);
-  const inAir = SIM.pos.y > groundH0 + 0.5;
+  const inAir = SIM.pos.y > groundH0 + 0.25;
   const hasThrottleInput = thrKeyUp || thrKeyDown || joystickThrottleActive;
 
   if (!hasThrottleInput && inAir && SIM.flightMode !== 'A-ATTI') {
@@ -1488,9 +1438,10 @@ function updatePhysics(dt) {
     SIM.altHold = SIM.pos.y;
   }
 
-  if (KEYS['e']) SIM.input.yaw = -0.9;
-  else if (KEYS['q']) SIM.input.yaw = 0.9;
-  else SIM.input.yaw *= 0.82;
+  // Smooth yaw input with soft ramp — coherente con pitch/roll, evita giros bruscos
+  if (KEYS['e']) SIM.input.yaw = ema(SIM.input.yaw, -0.9, 0.16);
+  else if (KEYS['q']) SIM.input.yaw = ema(SIM.input.yaw, 0.9, 0.16);
+  else SIM.input.yaw *= 0.85;
 
   // Smooth pitch/roll input with soft ramp
   if (KEYS['w']) SIM.input.pitch = ema(SIM.input.pitch, -0.85 * mc.rot, 0.15);
@@ -1536,8 +1487,8 @@ function updatePhysics(dt) {
 
   // Ground collision
   const groundH = getTerrainHeight(SIM.pos.x, SIM.pos.z);
-  if (SIM.pos.y < groundH + 0.3) {
-    SIM.pos.y = groundH + 0.3;
+  if (SIM.pos.y < groundH + 0.12) {
+    SIM.pos.y = groundH + 0.12;
     SIM.vel.y = Math.max(SIM.vel.y, 0);
     if (thrNorm < 0.05) { SIM.vel.x *= 0.7; SIM.vel.z *= 0.7; }
   }
@@ -1555,7 +1506,7 @@ function updatePhysics(dt) {
     if (dist > 2) {
       SIM.vel.x += (dx/dist) * 5 * dt;
       SIM.vel.z += (dz/dist) * 5 * dt;
-    } else if (SIM.pos.y > groundH + 0.5) {
+    } else if (SIM.pos.y > groundH + 0.25) {
       SIM.vel.y -= 2 * dt;
     } else {
       SIM.rthActive = false;
@@ -1566,7 +1517,16 @@ function updatePhysics(dt) {
   SIM.altitude = SIM.pos.y - groundH;
   SIM.hSpeed = Math.sqrt(SIM.vel.x*SIM.vel.x + SIM.vel.z*SIM.vel.z);
   SIM.vSpeed = SIM.vel.y;
-  SIM.rpmCurrent = thrNorm * 8500 + (thrNorm > 0 ? 1200 : 0);
+
+  // RPM de las hélices — SIEMPRE deben girar mientras el dron esté en el aire,
+  // sin importar si el gas está en cero/negativo (descenso) o en hold de altitud
+  // (donde el input de gas no refleja el empuje real que sostiene el vuelo).
+  const hoverThrNorm = 1 / (1.9 * mc.thr); // fracción de gas necesaria para sostener vuelo
+  const rpmHover = hoverThrNorm * 8500 + 1200;
+  let rpmTarget = thrNorm * 8500 + (thrNorm > 0 ? 1200 : 0);
+  if (SIM.altitude > 0.2) rpmTarget = Math.max(rpmTarget, rpmHover);
+  const rpmSmooth = 1 - Math.pow(0.7, dt * 60);
+  SIM.rpmCurrent = ema(SIM.rpmCurrent, rpmTarget, rpmSmooth);
 
   const dx2 = SIM.pos.x - SIM.lastPos.x, dz2 = SIM.pos.z - SIM.lastPos.z;
   SIM.totalDist += Math.sqrt(dx2*dx2 + dz2*dz2);
@@ -1619,45 +1579,50 @@ function updateDroneMesh() {
 }
 
 // ═══════════════════════════════════════════
-//  CAMERA FOLLOW — butter smooth
+//  CAMERA FOLLOW — siempre detrás del dron (chase cam), butter smooth
 // ═══════════════════════════════════════════
-const camOffsetBase = new THREE.Vector3(0, 4.2, 9);
+// Offset recalibrado para igualar el encuadre de referencia: vista NIVELADA,
+// casi a la altura del propio dron, justo detrás — fija, sin importar
+// alabeo/guiñada/giro sobre su propio centro
+const camOffsetBase = new THREE.Vector3(0, 0.35, 2.9);
 const camTarget = new THREE.Vector3();
-// Persistent smooth velocity tracker for camera lean
-let camVelSmooth = new THREE.Vector3();
+// Suavizado SOLO de la magnitud (zoom/altura por velocidad) — esto nunca
+// cambia el ángulo, así que no puede sacar a la cámara de la línea trasera.
+let camDistSmooth = 0;
 
-function updateCamera() {
-  // Compute target-frame smoothed velocity (low-pass)
-  camVelSmooth.x = ema(camVelSmooth.x, SIM.vel.x, 0.08);
-  camVelSmooth.y = ema(camVelSmooth.y, SIM.vel.y, 0.08);
-  camVelSmooth.z = ema(camVelSmooth.z, SIM.vel.z, 0.08);
-
+function updateCamera(dt) {
   const speedFactor = Math.min(SIM.hSpeed / 40, 1);
+
+  const distAlpha = 1 - Math.pow(0.85, dt * 60);
+  camDistSmooth = ema(camDistSmooth, speedFactor, distAlpha);
+
   const camOffset = new THREE.Vector3(
     camOffsetBase.x,
-    camOffsetBase.y + speedFactor * 1.5,
-    camOffsetBase.z + speedFactor * 5
+    camOffsetBase.y + camDistSmooth * 0.15,
+    camOffsetBase.z + camDistSmooth * 0.5
   );
 
+  // Yaw SIN suavizar ni interpolar: la cámara debe quedar siempre exactamente
+  // detrás del dron, incluso en giros rápidos sobre su propio centro (spin).
   const yaw = SIM.rot.yaw;
   const ox = camOffset.x * Math.cos(yaw) - camOffset.z * Math.sin(yaw);
   const oz = camOffset.x * Math.sin(yaw) + camOffset.z * Math.cos(yaw);
 
-  const targetPos = new THREE.Vector3(
+  // Posición fijada rígidamente cada frame (sin lerp) sobre el eje trasero —
+  // así nunca "se atrasa" ni se desplaza hacia un costado durante el giro.
+  camera.position.set(
     SIM.pos.x + ox,
     SIM.pos.y + camOffset.y,
     SIM.pos.z + oz
   );
 
-  // Frame-rate independent smooth follow — feels fluid at any FPS
-  const camAlpha = 1 - Math.pow(0.88, 1); // tuned for responsiveness
-  camera.position.lerp(targetPos, 0.09);
-  camTarget.lerp(new THREE.Vector3(SIM.pos.x, SIM.pos.y, SIM.pos.z), 0.14);
+  camTarget.set(SIM.pos.x, SIM.pos.y + 0.15, SIM.pos.z);
   camera.lookAt(camTarget);
 
-  // Dynamic FOV
-  const targetFov = 60 + speedFactor * 12;
-  camera.fov += (targetFov - camera.fov) * 0.04;
+  // Dynamic FOV — frame-rate independent (esto sí puede suavizarse: no afecta el ángulo)
+  const targetFov = 42 + speedFactor * 6;
+  const fovAlpha = 1 - Math.pow(0.9, dt * 60);
+  camera.fov += (targetFov - camera.fov) * fovAlpha;
   camera.updateProjectionMatrix();
 }
 
@@ -1862,8 +1827,6 @@ function updateHUD() {
     : 'linear-gradient(90deg,#990000,var(--red))';
 
   document.getElementById('thr-fill').style.height = Math.max(SIM.throttlePct, 0) + '%';
-  document.getElementById('compass-needle').style.transform = `rotate(${SIM.heading}deg)`;
-  document.getElementById('compass-hdg').textContent = `HDG ${hdg.toString().padStart(3,'0')}°`;
 
   drawMinimap();
   drawADI();
@@ -2007,7 +1970,7 @@ function setupJoystick(elId, knobId, onMove, onRelease) {
   const el = document.getElementById(elId);
   const knob = document.getElementById(knobId);
   let active = false, startX, startY;
-  const MAX = 24;
+  const MAX = 30;
 
   function update(cx, cy) {
     let dx = cx-startX, dy = cy-startY;
@@ -2069,7 +2032,7 @@ function animate() {
 
   updatePhysics(dt);
   updateDroneMesh();
-  updateCamera();
+  updateCamera(dt);
   updateNightMode(dt);
   updateEnvironment(dt);
   updateTrailTimer();
@@ -2121,7 +2084,7 @@ async function init() {
     () => { SIM.input.pitch = 0; SIM.input.roll = 0; }
   );
 
-  SIM.pos.y = getTerrainHeight(0, 0) + 0.3;
+  SIM.pos.y = getTerrainHeight(0, 0) + 0.12;
   await new Promise(r => setTimeout(r, 300));
 
   document.getElementById('loading-screen').style.transition = 'opacity 0.6s';
