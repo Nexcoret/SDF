@@ -341,7 +341,7 @@
 
 <div id="loading-screen">
   <div class="logo">SIMULADOR RPA SECURITAS</div>
-  <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO v6.0 — ENHANCED</div>
+  <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO v6.1 — ENHANCED</div>
   <div id="load-bar-track"><div id="load-bar-fill"></div></div>
   <div id="load-text">INITIALIZING TERRAIN ENGINE...</div>
 </div>
@@ -748,10 +748,12 @@ function buildSky() {
   scene.add(sunMesh);
 }
 
-// ── ENHANCED TERRAIN (4000x4000 — double size) ──
+// ── SEMI-URBAN HYPERREALISTIC TERRAIN ──
+// Inspirado en paisaje semi-urbano: colinas suaves con jardines geométricos,
+// franjas de flores de colores, senderos, áreas verdes y zona urbana.
 function buildTerrain() {
-  const W = 512, H = 512;       // grid resolution (optimized for performance)
-  const SIZE = 4000;             // DOUBLE the original 2000
+  const W = 512, H = 512;
+  const SIZE = 4000;
 
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, W - 1, H - 1);
   geo.rotateX(-Math.PI / 2);
@@ -761,14 +763,31 @@ function buildTerrain() {
 
   for (let i = 0; i < W; i++) {
     for (let j = 0; j < H; j++) {
-      const x = (i / W) - 0.5, z = (j / H) - 0.5;
-      let h = smoothNoise(x * 2, z * 2);
-      // Keep center flat (landing zone radius ~60m in world space)
-      const dist = Math.sqrt(x * x + z * z);
-      const flattenR = 0.03;  // normalized radius for flat zone
-      const flatten = Math.min(dist / flattenR, 1.0);
-      h *= flatten * flatten;
-      h = Math.max(h, 0);
+      const nx = (i / W) - 0.5;
+      const nz = (j / H) - 0.5;
+
+      // Colinas suaves estilo parque urbano — amplitudes moderadas, frecuencias bajas
+      let h = 0;
+      h += Math.sin(nx * 3.1 + 0.5) * Math.cos(nz * 2.8 - 0.3) * 8.0;   // colinas principales
+      h += Math.sin(nx * 5.4 + 1.2) * Math.cos(nz * 4.9 + 0.7) * 3.5;   // ondulaciones medias
+      h += Math.sin(nx * 9.1 - 0.8) * Math.cos(nz * 8.6 + 1.4) * 1.2;   // detalle fino
+      h += Math.cos(nx * 2.2 + 0.9) * Math.sin(nz * 1.8 - 0.4) * 5.0;   // elevación de fondo
+
+      // Limitar altura para entorno semi-urbano (sin montañas abruptas)
+      h = Math.max(0, h);
+      h = Math.min(h, 18);
+
+      // Zona central plana (landing pad / área deportiva)
+      const dist = Math.sqrt(nx * nx + nz * nz);
+      const flatCore = Math.min(dist / 0.025, 1.0);
+      h *= flatCore * flatCore;
+
+      // Zona sudeste plana (simula canchas / pista ciclista)
+      const seX = nx - 0.15, seZ = nz - 0.10;
+      const seDist = Math.sqrt(seX*seX*4 + seZ*seZ*2);
+      const seFlat = Math.min(seDist / 0.12, 1.0);
+      h *= 0.15 + seFlat * 0.85;
+
       heights[i + j * W] = h;
     }
   }
@@ -779,46 +798,55 @@ function buildTerrain() {
   pos.needsUpdate = true;
   geo.computeVertexNormals();
 
-  // Enhanced vertex colors — more biomes, smoother transitions
+  // Paleta de colores semi-urbana: verde césped, tierra sendero, pasto oscuro
   const colors = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
-    const h = pos.getY(i);
-    const wx = pos.getX(i), wz = pos.getZ(i);
-    const biome = biomeNoise(wx, wz);
-    const jitter = pseudoRand(wx * 0.1, wz * 0.1) * 0.035;
+    const h  = pos.getY(i);
+    const wx = pos.getX(i);
+    const wz = pos.getZ(i);
+    const jitter = pseudoRand(wx * 0.08, wz * 0.08) * 0.03;
+
+    // Micro-noise para variación de cesped natural
+    const grassVar = Math.sin(wx * 0.18 + 0.5) * Math.cos(wz * 0.22 - 0.3) * 0.5 + 0.5;
+    // Patrón de senderos (paths) — líneas diagonales de tierra beige
+    const pathNoise = Math.sin(wx * 0.07 + wz * 0.05) * Math.cos(wx * 0.04 - wz * 0.09);
+    const isPath = pathNoise > 0.72;
 
     let r, g, b;
-    if (h > 20) {               // Peaks — snow/rock
-      const snowT = Math.min((h - 20) / 8, 1.0);
-      r = 0.65 + snowT * 0.30; g = 0.62 + snowT * 0.33; b = 0.57 + snowT * 0.40;
-    } else if (h > 14) {        // High rock — grey-brown
-      r = 0.52; g = 0.47; b = 0.38;
-    } else if (h > 9) {         // Transition rock/grass
-      const t = (h - 9) / 5;
-      r = 0.30 + t*0.22; g = 0.38 + t*0.09; b = 0.20 + t*0.18;
-    } else if (biome > 0.65) {  // Dense forest
-      r = 0.12; g = 0.28; b = 0.10;
-    } else if (biome > 0.25) {  // Lush meadow
-      r = 0.22; g = 0.44; b = 0.18;
-    } else if (biome > -0.15) { // Light grass/shrubs
-      r = 0.35; g = 0.49; b = 0.24;
-    } else if (biome > -0.55) { // Rocky scrub
-      r = 0.44; g = 0.40; b = 0.31;
-    } else {                    // Sandy/arid
-      r = 0.62; g = 0.52; b = 0.36;
+    if (isPath) {
+      // Sendero de grava/tierra beige — igual que en la imagen
+      r = 0.76 + jitter; g = 0.68 + jitter; b = 0.54 + jitter;
+    } else if (h > 12) {
+      // Cimas — pasto más seco/amarillo
+      r = 0.48 + jitter; g = 0.52 + jitter; b = 0.22 + jitter;
+    } else if (h > 7) {
+      // Ladera media — verde oscuro tupido
+      const t = (h - 7) / 5;
+      r = 0.18 + t * 0.08 + jitter;
+      g = 0.38 + t * 0.05 + grassVar * 0.06 + jitter;
+      b = 0.14 + jitter;
+    } else if (h > 2) {
+      // Llano con jardines — verde vivo
+      r = 0.22 + grassVar * 0.08 + jitter;
+      g = 0.52 + grassVar * 0.12 + jitter;
+      b = 0.18 + jitter;
+    } else {
+      // Zona muy baja — césped lush brillante (área de parque)
+      r = 0.26 + grassVar * 0.06 + jitter;
+      g = 0.58 + grassVar * 0.10 + jitter;
+      b = 0.20 + jitter;
     }
-    // Slight shadow in valleys (ambient occlusion approximation)
-    const aoFactor = Math.max(0.7, Math.min(1.0, h / 8 + 0.7));
-    colors[i * 3]     = Math.max(0, Math.min(1, (r + jitter) * aoFactor));
-    colors[i * 3 + 1] = Math.max(0, Math.min(1, (g + jitter) * aoFactor));
-    colors[i * 3 + 2] = Math.max(0, Math.min(1, (b + jitter) * aoFactor));
+
+    const aoFactor = Math.max(0.72, Math.min(1.0, h / 10 + 0.72));
+    colors[i * 3]     = Math.max(0, Math.min(1, r * aoFactor));
+    colors[i * 3 + 1] = Math.max(0, Math.min(1, g * aoFactor));
+    colors[i * 3 + 2] = Math.max(0, Math.min(1, b * aoFactor));
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-  // MeshStandardMaterial — physically-based for better realism
   const mat = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.88,
+    roughness: 0.85,
     metalness: 0.0,
   });
 
@@ -832,127 +860,551 @@ function buildTerrain() {
   terrainMesh.userData.SIZE = SIZE;
 }
 
-// ── WATER ──
+// ── AGUA — pequeños estanques de parque ──
 function buildWater() {
-  // A few low-lying water bodies scattered across the larger terrain
   const waterPositions = [
-    { x: 120, z: -180, r: 45 },
-    { x: -220, z: 140, r: 60 },
-    { x: 350, z: 200, r: 35 },
-    { x: -380, z: -300, r: 50 },
+    { x: -180, z: 90,  r: 28 },
+    { x:  240, z: -160, r: 20 },
+    { x: -350, z: -220, r: 35 },
   ];
   waterPositions.forEach(wp => {
-    const wgeo = new THREE.CircleGeometry(wp.r, 32);
+    const wgeo = new THREE.CircleGeometry(wp.r, 40);
     const wmat = new THREE.MeshStandardMaterial({
-      color: 0x2a6a9a,
-      roughness: 0.05,
-      metalness: 0.3,
+      color: 0x3a88b8,
+      roughness: 0.04,
+      metalness: 0.25,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.88,
     });
     const w = new THREE.Mesh(wgeo, wmat);
     w.rotation.x = -Math.PI / 2;
     const gh = getTerrainHeight(wp.x, wp.z);
-    w.position.set(wp.x, gh + 0.1, wp.z);
+    w.position.set(wp.x, gh + 0.08, wp.z);
     w.userData.isWater = true;
-    w.userData.baseY = gh + 0.1;
+    w.userData.baseY = gh + 0.08;
     scene.add(w);
-    if (!waterMesh) waterMesh = w; // reference first one for animation
+    // Borde verde del estanque
+    const edgeGeo = new THREE.RingGeometry(wp.r, wp.r + 1.5, 40);
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x2a6a20, roughness: 0.9 });
+    const edge = new THREE.Mesh(edgeGeo, edgeMat);
+    edge.rotation.x = -Math.PI / 2;
+    edge.position.set(wp.x, gh + 0.09, wp.z);
+    scene.add(edge);
+    if (!waterMesh) waterMesh = w;
   });
 }
 
-// ── VEGETATION — trees and shrubs ──
+// ── FRANJAS DE FLORES — jardines geométricos de colores (imagen de referencia) ──
+function buildFlowerBeds() {
+  // Paleta de flores: lavanda, púrpura, rosa, blanco, amarillo, naranja, rojo
+  const flowerColors = [
+    0xc97de8, // lavanda
+    0x7b3fa0, // púrpura oscuro
+    0xff89b5, // rosa claro
+    0xe855a0, // rosa fuerte
+    0xffffff, // blanco
+    0xffe44a, // amarillo
+    0xff8c00, // naranja
+    0xff3344, // rojo
+    0x66cc44, // verde jardín
+    0xa0e870, // verde lima
+  ];
+
+  // Franjas geométricas en ladera — réplica de la imagen
+  const stripesDefs = [
+    // [x_start, z_start, x_end, z_end, width, color, height_offset]
+    { cx: -80, cz: -60,  lx: 60, lz: 8,  w: 6, col: 0xc97de8 },
+    { cx: -80, cz: -50,  lx: 60, lz: 8,  w: 6, col: 0xffe44a },
+    { cx: -80, cz: -40,  lx: 60, lz: 8,  w: 6, col: 0xff89b5 },
+    { cx: -80, cz: -30,  lx: 60, lz: 8,  w: 6, col: 0x7b3fa0 },
+    { cx: -80, cz: -20,  lx: 60, lz: 8,  w: 6, col: 0xffffff },
+    { cx: -80, cz: -10,  lx: 60, lz: 8,  w: 6, col: 0xff3344 },
+    { cx: -80, cz:   0,  lx: 60, lz: 8,  w: 6, col: 0x66cc44 },
+    { cx: -80, cz:  10,  lx: 60, lz: 8,  w: 6, col: 0xff8c00 },
+    // Segundo bloque de franjas (más arriba en la colina)
+    { cx: -130, cz: -90, lx: 55, lz: 7,  w: 5, col: 0xa0e870 },
+    { cx: -130, cz: -80, lx: 55, lz: 7,  w: 5, col: 0xc97de8 },
+    { cx: -130, cz: -70, lx: 55, lz: 7,  w: 5, col: 0xffe44a },
+    { cx: -130, cz: -60, lx: 55, lz: 7,  w: 5, col: 0xe855a0 },
+    { cx: -130, cz: -50, lx: 55, lz: 7,  w: 5, col: 0x7b3fa0 },
+    { cx: -130, cz: -40, lx: 55, lz: 7,  w: 5, col: 0xffffff },
+    // Tercer bloque — franja diagonal
+    { cx:  20,  cz: -80, lx: 40, lz: 7,  w: 5, col: 0xff89b5 },
+    { cx:  20,  cz: -70, lx: 40, lz: 7,  w: 5, col: 0xc97de8 },
+    { cx:  20,  cz: -60, lx: 40, lz: 7,  w: 5, col: 0xffe44a },
+    { cx:  20,  cz: -50, lx: 40, lz: 7,  w: 5, col: 0xff3344 },
+    // Flores bordes de sendero (rosa y magenta como en la imagen)
+    { cx:  55,  cz:  20, lx: 45, lz: 5,  w: 4, col: 0xff89b5 },
+    { cx:  55,  cz:  28, lx: 45, lz: 5,  w: 4, col: 0xe855a0 },
+    { cx:  55,  cz:  36, lx: 45, lz: 5,  w: 4, col: 0xc97de8 },
+    { cx: -20,  cz:  35, lx: 50, lz: 5,  w: 4, col: 0xff89b5 },
+    { cx: -20,  cz:  44, lx: 50, lz: 5,  w: 4, col: 0xffe44a },
+  ];
+
+  stripesDefs.forEach(s => {
+    // Cada franja = muchos hemisferios pequeños (flores) instanciados
+    const flowersPerStripe = Math.floor(s.lx / 1.8) * Math.floor(s.w / 1.8);
+    const fgeo = new THREE.SphereGeometry(0.55, 6, 5);
+    const fmat = new THREE.MeshStandardMaterial({ color: s.col, roughness: 0.85, metalness: 0.0 });
+    const iMesh = new THREE.InstancedMesh(fgeo, fmat, flowersPerStripe);
+    const dummy = new THREE.Object3D();
+    let idx = 0;
+    for (let fx = 0; fx < s.lx && idx < flowersPerStripe; fx += 1.8) {
+      for (let fz = 0; fz < s.w && idx < flowersPerStripe; fz += 1.8) {
+        const wx = s.cx + fx + pseudoRand(fx, fz + s.cz) * 0.6 - 0.3;
+        const wz = s.cz + fz + pseudoRand(fx + s.cx, fz) * 0.6 - 0.3;
+        const wy = getTerrainHeight(wx, wz);
+        const sc = 0.7 + pseudoRand(wx * 0.3, wz * 0.3) * 0.5;
+        dummy.position.set(wx, wy + 0.4 * sc, wz);
+        dummy.scale.set(sc, sc * 0.65, sc);
+        dummy.rotation.y = pseudoRand(wx, wz) * Math.PI * 2;
+        dummy.updateMatrix();
+        iMesh.setMatrixAt(idx, dummy.matrix);
+        idx++;
+      }
+    }
+    // Pad remaining
+    for (let k = idx; k < flowersPerStripe; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      iMesh.setMatrixAt(k, dummy.matrix);
+    }
+    iMesh.instanceMatrix.needsUpdate = true;
+    iMesh.castShadow = true;
+    scene.add(iMesh);
+  });
+}
+
+// ── PISTA CICLISTA / CANCHA — asfalto con marcas ──
+function buildUrbanTrack() {
+  // Pista curva de asfalto (como en imagen: pista de skate/bici)
+  const trackCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(40, 0, 10),
+    new THREE.Vector3(80, 0, 0),
+    new THREE.Vector3(110, 0, -30),
+    new THREE.Vector3(120, 0, -70),
+    new THREE.Vector3(100, 0, -110),
+    new THREE.Vector3(60, 0, -130),
+    new THREE.Vector3(20, 0, -120),
+  ]);
+
+  const trackPoints = trackCurve.getPoints(60);
+  const trackWidth = 9;
+
+  for (let i = 0; i < trackPoints.length - 1; i++) {
+    const p0 = trackPoints[i];
+    const p1 = trackPoints[i + 1];
+    const dir = new THREE.Vector3().subVectors(p1, p0).normalize();
+    const perp = new THREE.Vector3(-dir.z, 0, dir.x);
+    const len = p0.distanceTo(p1) + 0.2;
+
+    const segGeo = new THREE.PlaneGeometry(trackWidth, len);
+    const segMat = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.92, metalness: 0.05 });
+    const seg = new THREE.Mesh(segGeo, segMat);
+    seg.rotation.x = -Math.PI / 2;
+    seg.rotation.z = Math.atan2(dir.x, dir.z);
+
+    const cx = (p0.x + p1.x) / 2;
+    const cz = (p0.z + p1.z) / 2;
+    const wy = getTerrainHeight(cx, cz) + 0.06;
+    seg.position.set(cx, wy, cz);
+    seg.receiveShadow = true;
+    scene.add(seg);
+
+    // Líneas blancas centrales
+    if (i % 3 === 0) {
+      const lineGeo = new THREE.PlaneGeometry(0.25, len * 0.55);
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.rotation.z = Math.atan2(dir.x, dir.z);
+      line.position.set(cx, wy + 0.01, cz);
+      scene.add(line);
+    }
+  }
+
+  // Canchas rectangulares planas (zona SE — como parking/canchas en imagen)
+  const courtDefs = [
+    { x: 80, z: -40, w: 35, d: 22, col: 0x3a8a5a },  // cancha verde
+    { x: 80, z: -68, w: 35, d: 22, col: 0x3a6a9a },  // cancha azul
+    { x: 118, z: -40, w: 30, d: 22, col: 0x8a6a3a }, // cancha ocre
+    { x: 118, z: -68, w: 30, d: 22, col: 0x4a4a5a }, // cancha gris
+  ];
+
+  courtDefs.forEach(c => {
+    const cGeo = new THREE.PlaneGeometry(c.w, c.d);
+    const cMat = new THREE.MeshStandardMaterial({ color: c.col, roughness: 0.78, metalness: 0.04 });
+    const court = new THREE.Mesh(cGeo, cMat);
+    court.rotation.x = -Math.PI / 2;
+    const wy = getTerrainHeight(c.x, c.z) + 0.05;
+    court.position.set(c.x, wy, c.z);
+    court.receiveShadow = true;
+    scene.add(court);
+
+    // Líneas de cancha
+    const linesData = [
+      [-c.w/2 + 1, 0], [c.w/2 - 1, 0], // laterales
+    ];
+    [[0, c.d/2 - 1, c.w - 2, 0.2], [0, -(c.d/2 - 1), c.w - 2, 0.2],
+     [0, 0, 0.2, c.d - 2]].forEach(([lx, lz, lw, ld]) => {
+      const llGeo = new THREE.PlaneGeometry(lw, ld);
+      const llMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+      const ll = new THREE.Mesh(llGeo, llMat);
+      ll.rotation.x = -Math.PI / 2;
+      ll.position.set(c.x + lx, wy + 0.01, c.z + lz);
+      scene.add(ll);
+    });
+  });
+
+  // Sendero de grava beige (color arena — como en imagen)
+  const pathDefs = [
+    { x: -10, z: 30, w: 200, d: 4, angle: 0.25 },
+    { x: -40, z: 10, w: 160, d: 3.5, angle: -0.1 },
+    { x:  30, z: -20, w: 120, d: 3, angle: 0.5 },
+  ];
+  pathDefs.forEach(p => {
+    const pGeo = new THREE.PlaneGeometry(p.w, p.d);
+    const pMat = new THREE.MeshStandardMaterial({ color: 0xc8b890, roughness: 0.94, metalness: 0.0 });
+    const path = new THREE.Mesh(pGeo, pMat);
+    path.rotation.x = -Math.PI / 2;
+    path.rotation.z = p.angle;
+    const wy = getTerrainHeight(p.x, p.z) + 0.04;
+    path.position.set(p.x, wy, p.z);
+    path.receiveShadow = true;
+    scene.add(path);
+  });
+}
+
+// ── ÁREA DEPORTIVA — gimnasio al aire libre y juegos infantiles ──
+function buildUrbanFacilities() {
+  const metalMat  = new THREE.MeshStandardMaterial({ color: 0x888899, roughness: 0.3, metalness: 0.85 });
+  const yellowMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.4 });
+  const redMat    = new THREE.MeshStandardMaterial({ color: 0xee2233, roughness: 0.5 });
+  const darkMat   = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.6 });
+  const sandMat   = new THREE.MeshStandardMaterial({ color: 0xd4c090, roughness: 0.95 });
+
+  // ── JUEGOS INFANTILES (zona NW, como en imagen) ──
+  const playGnd = new THREE.PlaneGeometry(18, 14);
+  const pg = new THREE.Mesh(playGnd, sandMat);
+  pg.rotation.x = -Math.PI / 2;
+  const pgY = getTerrainHeight(-35, -15) + 0.05;
+  pg.position.set(-35, pgY, -15);
+  pg.receiveShadow = true;
+  scene.add(pg);
+
+  function pole(x, z, r, h, mat) {
+    const g = new THREE.CylinderGeometry(r, r, h, 8);
+    const m = new THREE.Mesh(g, mat);
+    const y = getTerrainHeight(x, z) + h / 2;
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    scene.add(m);
+    return m;
+  }
+  function box(x, y, z, w, h, d, mat) {
+    const g = new THREE.BoxGeometry(w, h, d);
+    const m = new THREE.Mesh(g, mat);
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    scene.add(m);
+    return m;
+  }
+
+  // Torre de juegos (igual que imagen: amarillo con tobogán rojo)
+  const towerY = getTerrainHeight(-35, -16) + 2.8;
+  pole(-35, -16, 0.12, 5.6, darkMat);           // poste central
+  box(-35, towerY, -16, 2.2, 0.18, 2.2, yellowMat); // plataforma
+
+  // Tobogán rojo
+  const slideGeo = new THREE.BoxGeometry(0.6, 0.1, 2.8);
+  const slide = new THREE.Mesh(slideGeo, redMat);
+  slide.position.set(-33.5, towerY - 1.1, -16.8);
+  slide.rotation.z = -0.38;
+  slide.castShadow = true;
+  scene.add(slide);
+
+  // Escalera
+  for (let i = 0; i < 4; i++) {
+    box(-36.4, getTerrainHeight(-36.4, -16) + 0.3 + i * 0.65, -16, 0.08, 0.08, 1.6, metalMat);
+  }
+
+  // Columpio
+  pole(-42, -20, 0.09, 3.5, metalMat);
+  pole(-38, -20, 0.09, 3.5, metalMat);
+  const crossbarGeo = new THREE.CylinderGeometry(0.05, 0.05, 4.2, 8);
+  const crossbar = new THREE.Mesh(crossbarGeo, metalMat);
+  crossbar.rotation.z = Math.PI / 2;
+  crossbar.position.set(-40, getTerrainHeight(-40, -20) + 3.5, -20);
+  scene.add(crossbar);
+  // Asientos del columpio (cuerdas)
+  [-0.8, 0.8].forEach(ox => {
+    const ropeGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.8, 4);
+    const rope = new THREE.Mesh(ropeGeo, darkMat);
+    const rY = getTerrainHeight(-40 + ox, -20) + 2.6;
+    rope.position.set(-40 + ox, rY, -20);
+    scene.add(rope);
+    box(-40 + ox, rY - 1.0, -20, 0.55, 0.12, 0.3, yellowMat);
+  });
+
+  // ── GIMNASIO AL AIRE LIBRE (zona central-sur, como en imagen) ──
+  const gymY = getTerrainHeight(5, 25) + 0.04;
+  const gymBase = new THREE.PlaneGeometry(22, 16);
+  const gbm = new THREE.Mesh(gymBase, sandMat);
+  gbm.rotation.x = -Math.PI / 2;
+  gbm.position.set(5, gymY, 25);
+  gbm.receiveShadow = true;
+  scene.add(gbm);
+
+  // Marco de barras paralelas (calistenia)
+  const barConfigs = [
+    { x: 0,  z: 22, w: 8 },
+    { x: 0,  z: 26, w: 8 },
+    { x: 10, z: 24, w: 6 },
+  ];
+  barConfigs.forEach(bc => {
+    const bY = getTerrainHeight(bc.x, bc.z) + 2.3;
+    // dos postes
+    [-bc.w/2, bc.w/2].forEach(ox => {
+      pole(bc.x + ox, bc.z, 0.06, 2.3, metalMat);
+      // soporte horizontal
+      const hGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 8);
+      const hm = new THREE.Mesh(hGeo, metalMat);
+      hm.rotation.z = Math.PI / 2;
+      hm.position.set(bc.x + ox, bY, bc.z);
+      scene.add(hm);
+    });
+    // barra horizontal principal
+    const barGeo = new THREE.CylinderGeometry(0.04, 0.04, bc.w, 8);
+    const bar = new THREE.Mesh(barGeo, metalMat);
+    bar.rotation.z = Math.PI / 2;
+    bar.position.set(bc.x, bY + 0.3, bc.z);
+    bar.castShadow = true;
+    scene.add(bar);
+  });
+
+  // Barra de dominadas (pull-up bar)
+  const puY = getTerrainHeight(-6, 28) + 2.8;
+  pole(-8, 28, 0.07, 2.8, metalMat);
+  pole(-4, 28, 0.07, 2.8, metalMat);
+  const puBar = new THREE.CylinderGeometry(0.035, 0.035, 4.2, 8);
+  const pub = new THREE.Mesh(puBar, metalMat);
+  pub.rotation.z = Math.PI / 2;
+  pub.position.set(-6, puY, 28);
+  pub.castShadow = true;
+  scene.add(pub);
+}
+
+// ── ÁRBOLES HIPERREALISTAS — variedad tropical/parque urbano ──
 function buildVegetation() {
-  // Instanced low-poly trees for performance
-  const TREE_COUNT = 400;
-  const SHRUB_COUNT = 300;
-
-  // Tree trunk (instanced)
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 2.8, 6);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2a18, roughness: 0.95 });
-  const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, TREE_COUNT);
-  trunkMesh.castShadow = true;
-  trunkMesh.receiveShadow = true;
-
-  // Tree foliage top (instanced cone)
-  const foliageGeo = new THREE.ConeGeometry(2.2, 5.5, 7);
-  const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1a4a18, roughness: 0.9 });
-  const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, TREE_COUNT);
-  foliageMesh.castShadow = true;
-
-  // Shrub (instanced sphere)
-  const shrubGeo = new THREE.SphereGeometry(1.0, 6, 5);
-  const shrubMat = new THREE.MeshStandardMaterial({ color: 0x2d6020, roughness: 0.92 });
-  const shrubMesh = new THREE.InstancedMesh(shrubGeo, shrubMat, SHRUB_COUNT);
-  shrubMesh.castShadow = true;
-
   const dummy = new THREE.Object3D();
-  const SIZE = 4000;
 
-  let ti = 0;
-  const placedTrees = [];
-  let attempts = 0;
-  while (ti < TREE_COUNT && attempts < TREE_COUNT * 10) {
-    attempts++;
-    const px = (pseudoRand(ti * 3.1, attempts * 0.7) - 0.5) * SIZE * 0.88;
-    const pz = (pseudoRand(ti * 1.7 + 100, attempts * 1.3) - 0.5) * SIZE * 0.88;
-    const dist0 = Math.sqrt(px*px + pz*pz);
-    if (dist0 < 60) continue; // keep landing zone clear
-    const h = getTerrainHeight(px, pz);
-    if (h < 0.5 || h > 14) continue; // only on low-mid slopes
-    const biome = biomeNoise(px, pz);
-    if (biome < 0.0) continue; // only forest/meadow biomes
-    // Vary tree height
-    const scale = 0.7 + pseudoRand(px * 0.01, pz * 0.01) * 0.6;
+  // ── 1. ÁRBOLES DE COPA AMPLIA (tipo ornamental de parque) ──
+  const BROAD_COUNT = 180;
+  const broadTrunkGeo  = new THREE.CylinderGeometry(0.22, 0.34, 4.5, 7);
+  const broadTrunkMat  = new THREE.MeshStandardMaterial({ color: 0x4a2f14, roughness: 0.97 });
+  const broadFol1Geo   = new THREE.SphereGeometry(3.8, 9, 7);  // copa baja
+  const broadFol1Mat   = new THREE.MeshStandardMaterial({ color: 0x1e5a14, roughness: 0.88 });
+  const broadFol2Geo   = new THREE.SphereGeometry(2.8, 8, 6);  // copa alta
+  const broadFol2Mat   = new THREE.MeshStandardMaterial({ color: 0x256b18, roughness: 0.86 });
 
-    // Trunk
-    dummy.position.set(px, h + 1.4 * scale, pz);
-    dummy.scale.set(scale, scale, scale);
-    dummy.rotation.y = pseudoRand(px, pz) * Math.PI * 2;
-    dummy.updateMatrix();
-    trunkMesh.setMatrixAt(ti, dummy.matrix);
-    // Foliage
-    dummy.position.set(px, h + 4.5 * scale, pz);
-    dummy.updateMatrix();
-    foliageMesh.setMatrixAt(ti, dummy.matrix);
-    placedTrees.push({x:px, z:pz});
-    ti++;
-  }
-  // Pad remaining slots off-screen
-  for (let k = ti; k < TREE_COUNT; k++) {
-    dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001,0.001,0.001); dummy.updateMatrix();
-    trunkMesh.setMatrixAt(k, dummy.matrix);
-    foliageMesh.setMatrixAt(k, dummy.matrix);
-  }
-  trunkMesh.instanceMatrix.needsUpdate = true;
-  foliageMesh.instanceMatrix.needsUpdate = true;
-  scene.add(trunkMesh);
-  scene.add(foliageMesh);
+  const bTrunk  = new THREE.InstancedMesh(broadTrunkGeo,  broadTrunkMat,  BROAD_COUNT);
+  const bFol1   = new THREE.InstancedMesh(broadFol1Geo,   broadFol1Mat,   BROAD_COUNT);
+  const bFol2   = new THREE.InstancedMesh(broadFol2Geo,   broadFol2Mat,   BROAD_COUNT);
+  [bTrunk, bFol1, bFol2].forEach(m => { m.castShadow = true; m.receiveShadow = true; });
 
-  let si = 0;
-  attempts = 0;
-  while (si < SHRUB_COUNT && attempts < SHRUB_COUNT * 8) {
-    attempts++;
-    const px = (pseudoRand(si * 5.3 + 200, attempts * 2.1) - 0.5) * SIZE * 0.85;
-    const pz = (pseudoRand(si * 2.9 + 300, attempts * 0.9) - 0.5) * SIZE * 0.85;
-    const dist0 = Math.sqrt(px*px + pz*pz);
-    if (dist0 < 40) continue;
-    const h = getTerrainHeight(px, pz);
-    if (h < 0.3 || h > 12) continue;
-    const scale = 0.5 + pseudoRand(px * 0.02, pz * 0.02) * 0.7;
-    dummy.position.set(px, h + 1.0 * scale, pz);
-    dummy.scale.set(scale, scale * 0.75, scale);
-    dummy.rotation.y = pseudoRand(px + 1, pz + 1) * Math.PI * 2;
+  const broadPositions = [
+    // Fila de árboles bordeando sendero principal (NW → centro)
+    ...Array.from({length: 12}, (_, i) => ({ x: -20 - i*10, z: 28 + Math.sin(i)*4, forced: true })),
+    // Árboles agrupados en colinas
+    ...Array.from({length: 20}, (_, i) => ({ x: -100 + pseudoRand(i*3.7, i*1.2)*160 - 80, z: -80 + pseudoRand(i*1.9, i*4.1)*140 - 70, forced: false })),
+    // Árboles bordeando canchas
+    ...Array.from({length: 8}, (_, i) => ({ x: 55, z: -30 - i*12, forced: true })),
+    ...Array.from({length: 8}, (_, i) => ({ x: 155, z: -30 - i*12, forced: true })),
+  ];
+
+  let bi = 0;
+  broadPositions.forEach(bp => {
+    if (bi >= BROAD_COUNT) return;
+    const bx = bp.x, bz = bp.z;
+    if (!bp.forced && Math.sqrt(bx*bx + bz*bz) < 45) return;
+    const bh = getTerrainHeight(bx, bz);
+    const sc = 0.75 + pseudoRand(bx * 0.02, bz * 0.02) * 0.55;
+    dummy.position.set(bx, bh + 2.2 * sc, bz);
+    dummy.scale.set(sc, sc, sc);
+    dummy.rotation.y = pseudoRand(bx, bz) * Math.PI * 2;
     dummy.updateMatrix();
-    shrubMesh.setMatrixAt(si, dummy.matrix);
-    si++;
+    bTrunk.setMatrixAt(bi, dummy.matrix);
+    // Copa baja — excéntrica para naturalidad
+    dummy.position.set(bx + pseudoRand(bx, bz) * 0.8 - 0.4, bh + 5.2 * sc, bz + pseudoRand(bx+1, bz)*0.6 - 0.3);
+    dummy.scale.set(sc * (0.9 + pseudoRand(bx*0.05, bz*0.05)*0.3), sc * 0.75, sc * (0.9 + pseudoRand(bz*0.05, bx*0.04)*0.3));
+    dummy.updateMatrix();
+    bFol1.setMatrixAt(bi, dummy.matrix);
+    // Copa alta
+    dummy.position.set(bx, bh + 7.2 * sc, bz);
+    dummy.scale.set(sc * 0.7, sc * 0.6, sc * 0.7);
+    dummy.updateMatrix();
+    bFol2.setMatrixAt(bi, dummy.matrix);
+    bi++;
+  });
+  // Rellenar scatter aleatorio hasta completar
+  while (bi < BROAD_COUNT) {
+    const bx = (pseudoRand(bi * 3.1, bi * 0.7) - 0.5) * 900;
+    const bz = (pseudoRand(bi * 1.7 + 100, bi * 1.3) - 0.5) * 900;
+    const dist0 = Math.sqrt(bx*bx + bz*bz);
+    if (dist0 < 50) { bi++; continue; }
+    const bh = getTerrainHeight(bx, bz);
+    if (bh < 0.3 || bh > 15) { bi++; continue; }
+    const sc = 0.65 + pseudoRand(bx * 0.02, bz * 0.02) * 0.6;
+    dummy.position.set(bx, bh + 2.2 * sc, bz);
+    dummy.scale.set(sc, sc, sc); dummy.rotation.y = pseudoRand(bx, bz) * Math.PI * 2;
+    dummy.updateMatrix(); bTrunk.setMatrixAt(bi, dummy.matrix);
+    dummy.position.set(bx, bh + 5.2 * sc, bz);
+    dummy.scale.set(sc, sc * 0.75, sc); dummy.updateMatrix(); bFol1.setMatrixAt(bi, dummy.matrix);
+    dummy.position.set(bx, bh + 7.0 * sc, bz);
+    dummy.scale.set(sc * 0.65, sc * 0.6, sc * 0.65); dummy.updateMatrix(); bFol2.setMatrixAt(bi, dummy.matrix);
+    bi++;
   }
-  for (let k = si; k < SHRUB_COUNT; k++) {
+  [bTrunk, bFol1, bFol2].forEach(m => { m.instanceMatrix.needsUpdate = true; scene.add(m); });
+
+  // ── 2. PALMERAS (tropicales — como las de la imagen) ──
+  const PALM_COUNT = 60;
+  const palmTrunkGeo = new THREE.CylinderGeometry(0.12, 0.18, 7.5, 8);
+  const palmTrunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4c28, roughness: 0.95 });
+  const palmTopGeo   = new THREE.SphereGeometry(0.28, 6, 5);
+  const palmTopMat   = new THREE.MeshStandardMaterial({ color: 0x3a2010, roughness: 0.9 });
+  const palmFrondGeo = new THREE.ConeGeometry(2.4, 1.4, 5);
+  const palmFrondMat = new THREE.MeshStandardMaterial({ color: 0x226622, roughness: 0.85 });
+  const palmFrond2Mat= new THREE.MeshStandardMaterial({ color: 0x1a5218, roughness: 0.85 });
+
+  const pTrunk  = new THREE.InstancedMesh(palmTrunkGeo, palmTrunkMat, PALM_COUNT);
+  const pTop    = new THREE.InstancedMesh(palmTopGeo,   palmTopMat,   PALM_COUNT);
+  const pFrond1 = new THREE.InstancedMesh(palmFrondGeo, palmFrondMat, PALM_COUNT * 3);
+  const pFrond2 = new THREE.InstancedMesh(palmFrondGeo, palmFrond2Mat,PALM_COUNT * 3);
+
+  const palmSpots = [
+    // Palmas bordeando pista
+    ...Array.from({length: 10}, (_, i) => ({ x: 42 + i * 8, z: 5 })),
+    // Palmas en colina N (como la imagen)
+    { x: -60, z: -100 }, { x: -50, z: -95 }, { x: -70, z: -88 },
+    { x: -80, z: -105 }, { x: -40, z: -110 },
+    // Palmas dispersas
+    ...Array.from({length: 30}, (_, i) => ({
+      x: (pseudoRand(i*7.1+50, i*2.3) - 0.5) * 700,
+      z: (pseudoRand(i*3.7+80, i*5.1) - 0.5) * 700,
+    })),
+  ];
+
+  let pi = 0, pfi = 0;
+  palmSpots.forEach(ps => {
+    if (pi >= PALM_COUNT) return;
+    const ph = getTerrainHeight(ps.x, ps.z);
+    if (ph < 0 || ph > 13) return;
+    const lean = (pseudoRand(ps.x * 0.1, ps.z * 0.1) - 0.5) * 0.12;
+    const sc = 0.8 + pseudoRand(ps.x * 0.03, ps.z * 0.03) * 0.5;
+    const topH = 7.5 * sc;
+
+    dummy.position.set(ps.x, ph + topH / 2, ps.z);
+    dummy.scale.set(sc, sc, sc);
+    dummy.rotation.x = lean;
+    dummy.rotation.y = pseudoRand(ps.x, ps.z) * Math.PI * 2;
+    dummy.updateMatrix(); pTrunk.setMatrixAt(pi, dummy.matrix);
+
+    dummy.position.set(ps.x + lean * topH, ph + topH + 0.18, ps.z);
+    dummy.scale.set(sc * 0.8, sc * 0.8, sc * 0.8);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix(); pTop.setMatrixAt(pi, dummy.matrix);
+
+    // 3 frondas por palma
+    const topX = ps.x + lean * topH, topZ = ps.z;
+    const topY = ph + topH;
+    for (let f = 0; f < 3 && pfi < PALM_COUNT * 3; f++) {
+      const fa = (f / 3) * Math.PI * 2 + pseudoRand(ps.x + f, ps.z) * 1.5;
+      const fr = 2.0 * sc;
+      dummy.position.set(topX + Math.sin(fa) * fr, topY + 0.2 + Math.cos(f) * 0.3, topZ + Math.cos(fa) * fr);
+      dummy.scale.set(sc * 0.7, sc * 0.55, sc * 0.7);
+      dummy.rotation.set(-0.6 + pseudoRand(fa, f) * 0.3, fa, 0.0);
+      dummy.updateMatrix();
+      (f % 2 === 0 ? pFrond1 : pFrond2).setMatrixAt(pfi, dummy.matrix);
+      pfi++;
+    }
+    pi++;
+  });
+  // Pad
+  for (let k = pi; k < PALM_COUNT; k++) {
     dummy.position.set(9999,0,9999); dummy.scale.set(0.001,0.001,0.001); dummy.updateMatrix();
-    shrubMesh.setMatrixAt(k, dummy.matrix);
+    pTrunk.setMatrixAt(k, dummy.matrix); pTop.setMatrixAt(k, dummy.matrix);
   }
-  shrubMesh.instanceMatrix.needsUpdate = true;
-  scene.add(shrubMesh);
+  for (let k = pfi; k < PALM_COUNT * 3; k++) {
+    dummy.position.set(9999,0,9999); dummy.scale.set(0.001,0.001,0.001); dummy.updateMatrix();
+    pFrond1.setMatrixAt(k, dummy.matrix); pFrond2.setMatrixAt(k, dummy.matrix);
+  }
+  [pTrunk, pTop, pFrond1, pFrond2].forEach(m => { m.instanceMatrix.needsUpdate = true; m.castShadow = true; scene.add(m); });
+
+  // ── 3. SAUCE LLORÓN (como en imagen — árbol icónico izquierda) ──
+  const willowPositions = [
+    { x: -160, z: 30 }, { x: -180, z: 60 }, { x: -200, z: -20 },
+    { x: 200, z: 80 }, { x: -300, z: 150 },
+  ];
+  willowPositions.forEach(wp => {
+    const wh = getTerrainHeight(wp.x, wp.z);
+    if (wh > 12) return;
+    // Tronco grueso inclinado
+    const wtGeo = new THREE.CylinderGeometry(0.28, 0.42, 6.5, 8);
+    const wtMat = new THREE.MeshStandardMaterial({ color: 0x3a2810, roughness: 0.97 });
+    const wt = new THREE.Mesh(wtGeo, wtMat);
+    wt.position.set(wp.x, wh + 3.25, wp.z);
+    wt.rotation.z = 0.08;
+    wt.castShadow = true;
+    scene.add(wt);
+    // Copa colgante en capas (efecto sauce)
+    const willowLayers = [
+      { r: 4.5, yOff: 6.2, ys: 0.55, col: 0x1e5a18 },
+      { r: 4.0, yOff: 4.8, ys: 0.65, col: 0x1a5214 },
+      { r: 3.2, yOff: 3.2, ys: 0.80, col: 0x1e6020 },
+      { r: 2.2, yOff: 2.0, ys: 0.95, col: 0x246824 },
+    ];
+    willowLayers.forEach(wl => {
+      const wlGeo = new THREE.SphereGeometry(wl.r, 9, 7);
+      const wlMat = new THREE.MeshStandardMaterial({ color: wl.col, roughness: 0.88 });
+      const wlm = new THREE.Mesh(wlGeo, wlMat);
+      wlm.scale.set(1.0, wl.ys, 1.0);
+      wlm.position.set(wp.x + 0.3, wh + wl.yOff, wp.z);
+      wlm.castShadow = true;
+      scene.add(wlm);
+    });
+  });
+
+  // ── 4. ARBUSTOS ORNAMENTALES — bordes de sendero con flores ──
+  const SHRUB_COUNT = 250;
+  const shrubGeo = new THREE.SphereGeometry(0.9, 7, 6);
+  const shrubColors = [0x2a6820, 0x336622, 0x1e5518, 0x3a7028];
+  const shrubMeshes = shrubColors.map(c =>
+    new THREE.InstancedMesh(shrubGeo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 }), Math.floor(SHRUB_COUNT / shrubColors.length))
+  );
+  shrubMeshes.forEach((sm, si_) => {
+    let idx = 0;
+    const perMesh = Math.floor(SHRUB_COUNT / shrubColors.length);
+    while (idx < perMesh) {
+      const px = (pseudoRand(si_*200 + idx * 5.3, idx * 2.1 + si_*50) - 0.5) * 800;
+      const pz = (pseudoRand(si_*300 + idx * 2.9, idx * 0.9 + si_*70) - 0.5) * 800;
+      if (Math.sqrt(px*px + pz*pz) < 35) { idx++; continue; }
+      const h = getTerrainHeight(px, pz);
+      if (h < 0.2 || h > 13) { idx++; continue; }
+      const sc = 0.45 + pseudoRand(px * 0.03, pz * 0.03) * 0.65;
+      dummy.position.set(px, h + 0.9 * sc, pz);
+      dummy.scale.set(sc, sc * 0.7, sc);
+      dummy.rotation.y = pseudoRand(px + 1, pz + 1) * Math.PI * 2;
+      dummy.updateMatrix();
+      sm.setMatrixAt(idx, dummy.matrix);
+      idx++;
+    }
+    for (let k = idx; k < perMesh; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      sm.setMatrixAt(k, dummy.matrix);
+    }
+    sm.instanceMatrix.needsUpdate = true;
+    sm.castShadow = true;
+    scene.add(sm);
+  });
 }
 
 function getTerrainHeight(x, z) {
@@ -1124,13 +1576,24 @@ function buildDrone() {
     [ 0.95*S, -0.04*S,  0.85*S, 0xffffff],
     [-0.95*S, -0.04*S,  0.85*S, 0xffffff],
   ];
+  const navLights = [];
   ledDefs.forEach(([x,y,z,c]) => {
     const led = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: c }));
     led.position.set(x,y,z);
     const pl = new THREE.PointLight(c, 0.5, 2.5);
     pl.position.set(x,y,z);
     group.add(led, pl);
+    navLights.push(pl);
   });
+
+  // Luz de visibilidad nocturna — evita que el dron "desaparezca" en la
+  // oscuridad cuando la luz ambiental/solar cae a su mínimo. Apagada de día
+  // (intensidad 0), se enciende progresivamente con el modo nocturno.
+  const nightVisLight = new THREE.PointLight(0xfff4d6, 0, 9, 1.6);
+  nightVisLight.position.set(0, 0.35*S, 0);
+  group.add(nightVisLight);
+  group.userData.nightVisLight = nightVisLight;
+  group.userData.navLights = navLights;
 
   // Bottom sensor
   const oaGeo = new THREE.BoxGeometry(0.18*S, 0.06*S, 0.12*S);
@@ -1545,6 +2008,10 @@ function updateDroneMesh() {
 
   droneMesh.position.set(SIM.pos.x, SIM.pos.y, SIM.pos.z);
   droneMesh.rotation.order = 'YXZ';
+  // El yaw se aplica al mesh para que el movimiento físico sea coherente,
+  // PERO la cámara también rota con el mismo yaw al instante, de modo que
+  // desde la perspectiva del observador el dron NUNCA parece girar:
+  // lo que gira es el paisaje/mundo a su alrededor. Vista trasera fija.
   droneMesh.rotation.y = SIM.rot.yaw;
   droneMesh.rotation.x = SIM.rot.pitch;
   droneMesh.rotation.z = SIM.rot.roll;
@@ -1579,47 +2046,56 @@ function updateDroneMesh() {
 }
 
 // ═══════════════════════════════════════════
-//  CAMERA FOLLOW — siempre detrás del dron (chase cam), butter smooth
+//  CAMERA FOLLOW — VISTA TRASERA FIJA (Chase Cam FPV)
+//  La cámara SIEMPRE permanece detrás del dron respecto a su heading.
+//  Cuando el dron gira en yaw, el MUNDO gira alrededor de la cámara;
+//  el dron siempre aparece orientado hacia adelante en pantalla.
+//  Solo pitch y roll del dron se aplican visualmente al mesh.
 // ═══════════════════════════════════════════
-// Offset recalibrado para igualar el encuadre de referencia: vista NIVELADA,
-// casi a la altura del propio dron, justo detrás — fija, sin importar
-// alabeo/guiñada/giro sobre su propio centro
-const camOffsetBase = new THREE.Vector3(0, 0.35, 2.9);
-const camTarget = new THREE.Vector3();
-// Suavizado SOLO de la magnitud (zoom/altura por velocidad) — esto nunca
-// cambia el ángulo, así que no puede sacar a la cámara de la línea trasera.
+
+// Distancia y altura de la cámara respecto al dron (en el eje local trasero)
+const CAM_BACK   = 2.9;   // metros detrás
+const CAM_UP     = 0.35;  // metros arriba
+const CAM_LOOK_UP = 0.15; // punto de mira ligeramente sobre el centro del dron
+
 let camDistSmooth = 0;
 
 function updateCamera(dt) {
   const speedFactor = Math.min(SIM.hSpeed / 40, 1);
-
   const distAlpha = 1 - Math.pow(0.85, dt * 60);
   camDistSmooth = ema(camDistSmooth, speedFactor, distAlpha);
 
-  const camOffset = new THREE.Vector3(
-    camOffsetBase.x,
-    camOffsetBase.y + camDistSmooth * 0.15,
-    camOffsetBase.z + camDistSmooth * 0.5
-  );
+  const backDist = CAM_BACK + camDistSmooth * 0.5;
+  const upDist   = CAM_UP   + camDistSmooth * 0.15;
 
-  // Yaw SIN suavizar ni interpolar: la cámara debe quedar siempre exactamente
-  // detrás del dron, incluso en giros rápidos sobre su propio centro (spin).
+  // === POSICIÓN DE CÁMARA ===
+  // El offset "detrás del dron" se rota por el yaw ACTUAL del dron.
+  // Se usa el yaw sin ningún suavizado de ángulo: la cámara sigue
+  // el giro al instante, de modo que el dron nunca parece girar en pantalla.
   const yaw = SIM.rot.yaw;
-  const ox = camOffset.x * Math.cos(yaw) - camOffset.z * Math.sin(yaw);
-  const oz = camOffset.x * Math.sin(yaw) + camOffset.z * Math.cos(yaw);
+  const sinY = Math.sin(yaw);
+  const cosY = Math.cos(yaw);
 
-  // Posición fijada rígidamente cada frame (sin lerp) sobre el eje trasero —
-  // así nunca "se atrasa" ni se desplaza hacia un costado durante el giro.
+  // Vector "detrás" en espacio mundo, rotado por el heading del dron
+  // (offset local: x=0, z=+backDist  →  mundo: +sinY·back, +cosY·back en Z)
   camera.position.set(
-    SIM.pos.x + ox,
-    SIM.pos.y + camOffset.y,
-    SIM.pos.z + oz
+    SIM.pos.x + sinY * backDist,
+    SIM.pos.y + upDist,
+    SIM.pos.z + cosY * backDist
   );
 
-  camTarget.set(SIM.pos.x, SIM.pos.y + 0.15, SIM.pos.z);
-  camera.lookAt(camTarget);
+  // === PUNTO DE MIRA ===
+  // La cámara siempre apunta al dron (con un leve offset arriba).
+  // Esto hace que cuando el dron hace pitch hacia adelante, la cámara
+  // lo siga visualmente sin moverse ella misma en yaw.
+  const lookTarget = new THREE.Vector3(
+    SIM.pos.x,
+    SIM.pos.y + CAM_LOOK_UP,
+    SIM.pos.z
+  );
+  camera.lookAt(lookTarget);
 
-  // Dynamic FOV — frame-rate independent (esto sí puede suavizarse: no afecta el ángulo)
+  // === FOV DINÁMICO (solo magnitud, no afecta ángulo de vista) ===
   const targetFov = 42 + speedFactor * 6;
   const fovAlpha = 1 - Math.pow(0.9, dt * 60);
   camera.fov += (targetFov - camera.fov) * fovAlpha;
@@ -1659,6 +2135,15 @@ function updateNightMode(dt) {
   if (cityLights) cityLights.visible = nightT > 0.4;
 
   renderer.toneMappingExposure = Math.max(0.3, 1.1 - nightT * 0.7);
+
+  // Mantener el dron siempre visible en modo nocturno: encender su luz
+  // dedicada y reforzar las LEDs de navegación a medida que oscurece.
+  if (droneMesh && droneMesh.userData.nightVisLight) {
+    droneMesh.userData.nightVisLight.intensity = nightT * 3.2;
+  }
+  if (droneMesh && droneMesh.userData.navLights) {
+    droneMesh.userData.navLights.forEach(pl => { pl.intensity = 0.5 + nightT * 1.8; });
+  }
 
   // Animate clouds opacity at night
   cloudMeshes.forEach(c => {
