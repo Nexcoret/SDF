@@ -1921,6 +1921,27 @@ function buildDrone() {
 
   group.add(gimbalGroup);
   group.userData.gimbalGroup = gimbalGroup;
+
+  // Recolectar todos los materiales del cuerpo del dron que soportan
+  // emissive. Esto permite que el dron se "autoilumine" levemente de
+  // noche sin depender de la luz ambiental/solar de la escena (que cae
+  // casi a cero), evitando que se vuelva invisible/silueta negra contra
+  // el cielo oscuro. Cada material guarda su color base para mezclar.
+  const nightEmissiveMats = [];
+  group.traverse(obj => {
+    if (obj.isMesh && obj.material && 'emissive' in obj.material) {
+      const mat = obj.material;
+      // Saltar materiales que ya son fuertemente emisivos por diseño
+      // (LEDs de navegación, que usan MeshBasicMaterial y no entran aquí
+      // de todas formas) — esto cubre body/arms/motors/etc.
+      nightEmissiveMats.push({
+        mat,
+        baseColor: mat.color.clone()
+      });
+    }
+  });
+  group.userData.nightEmissiveMats = nightEmissiveMats;
+
   droneMesh = group;
 
   const sGeo = new THREE.CircleGeometry(0.4, 20);
@@ -2221,15 +2242,31 @@ function updatePhysics(dt) {
   const cosYaw = Math.cos(SIM.rot.yaw);
   const sinPitch = Math.sin(SIM.rot.pitch);
 
-  // fwd: positivo = avanzar (W). sde: positivo = desplazarse a la derecha
-  // visualmente cuando el dron se inclina a la derecha (roll negativo en pantalla).
-  const fwd = sinPitch * mc.sp;
-  const sde = SIM.rot.roll * mc.sp * 1.8;
+  // fwd: positivo = avanzar (W). sde: positivo = desplazarse a la derecha.
+  // IMPORTANTE: el signo aquí está invertido respecto a sinPitch/rot.roll
+  // a propósito. SIM.rot.pitch / SIM.rot.roll se aplican TAL CUAL a
+  // droneMesh.rotation.x / .z (ver updateDroneMesh), y ese signo es el
+  // que da la inclinación visual correcta (nariz abajo al presionar W,
+  // lado derecho abajo al presionar D). Pero ese mismo signo, si se usara
+  // directamente para mover la cámara/posición, hace que el dron viaje
+  // en la dirección opuesta a su propia inclinación (se inclina hacia
+  // adelante pero retrocede). Para que el desplazamiento siga la
+  // inclinación visual (como un dron real), el vector de avance se toma
+  // con signo invertido respecto a sinPitch/rot.roll.
+  const fwd = -sinPitch * mc.sp;
+  const sde = -SIM.rot.roll * mc.sp * 1.8;
 
   // Smooth acceleration — apply wind
+  // Proyección de fwd/sde (espacio local del dron) a espacio mundo,
+  // usando el MISMO vector "adelante" que ya usa la cámara para
+  // posicionarse detrás del dron: adelante_mundo = (-sin(yaw), -cos(yaw)),
+  // derecha_mundo = (cos(yaw), -sin(yaw)). La fórmula anterior solo
+  // coincidía con esto en yaw=0 y se desviaba (cruzando X/Z) en
+  // cualquier otro rumbo, lo que hacía que W/S y A/D se sintieran
+  // intercambiados al girar el dron.
   const windScale = SIM.flightMode === 'P-GPS' ? 1.0 : 0.5;
-  SIM.vel.x += (sinYaw * fwd + cosYaw * sde + SIM.wind.x * windScale) * dt;
-  SIM.vel.z += (-cosYaw * fwd + sinYaw * sde + SIM.wind.z * windScale) * dt;
+  SIM.vel.x += (-sinYaw * fwd + cosYaw * sde + SIM.wind.x * windScale) * dt;
+  SIM.vel.z += (-cosYaw * fwd - sinYaw * sde + SIM.wind.z * windScale) * dt;
 
   SIM.vel.x *= DRAG;
   SIM.vel.z *= DRAG;
@@ -2528,12 +2565,25 @@ function updateNightMode(dt) {
   }
 
   // Mantener el dron siempre visible en modo nocturno: encender su luz
-  // dedicada y reforzar las LEDs de navegación a medida que oscurece.
+  // dedicada, reforzar las LEDs de navegación, y aplicar un emissive
+  // sutil a toda la carrocería a medida que oscurece. El emissive es el
+  // método principal (no depende de que la luz puntual "alcance" cada
+  // cara del modelo); la point light suma un brillo ambiental extra y
+  // sigue iluminando el suelo/entorno cercano al dron.
   if (droneMesh && droneMesh.userData.nightVisLight) {
-    droneMesh.userData.nightVisLight.intensity = nightT * 3.2;
+    droneMesh.userData.nightVisLight.intensity = nightT * 4.5;
   }
   if (droneMesh && droneMesh.userData.navLights) {
     droneMesh.userData.navLights.forEach(pl => { pl.intensity = 0.5 + nightT * 1.8; });
+  }
+  if (droneMesh && droneMesh.userData.nightEmissiveMats) {
+    // Color cálido fijo (no proporcional al color base de cada pieza):
+    // así las piezas oscuras (motores, brazos negros, etc.) también se
+    // vuelven visibles de noche y no solo las piezas claras.
+    const emissiveStrength = nightT * 0.45;
+    droneMesh.userData.nightEmissiveMats.forEach(({ mat }) => {
+      mat.emissive.setRGB(emissiveStrength, emissiveStrength * 0.92, emissiveStrength * 0.75);
+    });
   }
 
   // Animate clouds opacity at night
