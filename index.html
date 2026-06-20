@@ -107,7 +107,7 @@
     min-width: 160px;
   }
 
-  #left-panel { left: 8px; border-radius: 0 0 4px 4px; }
+  #left-panel { left: 8px; border-radius: 0 0 4px 4px; top: 244px; }
   #right-panel { right: 8px; border-radius: 0 0 4px 4px; }
 
   .panel-title {
@@ -170,6 +170,34 @@
     position: absolute; bottom: 2px; left: 4px;
     font-size: 8px; color: rgba(0,255,65,0.4); letter-spacing: 1px;
   }
+
+  /* ── TOP-DOWN CAMERA (Vista cenital) ── */
+  #topdown-wrap {
+    position: fixed; top: 56px; left: 8px;
+    z-index: 100;
+    width: 180px; height: 180px;
+    border: 1px solid var(--border-bright);
+    background: #000;
+    overflow: hidden;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 0 10px rgba(0,255,65,0.15);
+  }
+  #topdown-canvas { width: 100%; height: 100%; display: block; }
+  .topdown-label {
+    position: absolute; top: 2px; left: 4px;
+    font-size: 8px; color: rgba(0,255,65,0.6); letter-spacing: 1px;
+    font-family: 'Share Tech Mono', monospace;
+    text-shadow: 0 0 4px #000;
+    pointer-events: none;
+  }
+  .topdown-crosshair {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .topdown-crosshair::before, .topdown-crosshair::after {
+    content: ''; position: absolute; background: rgba(0,255,65,0.5);
+  }
+  .topdown-crosshair::before { left: 50%; top: 50%; width: 1px; height: 14px; transform: translate(-50%,-50%); }
+  .topdown-crosshair::after { left: 50%; top: 50%; width: 14px; height: 1px; transform: translate(-50%,-50%); }
 
   /* ── BOTTOM CONTROLS ── */
   #bottom-controls {
@@ -341,7 +369,7 @@
 
 <div id="loading-screen">
   <div class="logo">SIMULADOR RPA SECURITAS</div>
-  <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO v6.1 — ENHANCED</div>
+  <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO</div>
   <div id="load-bar-track"><div id="load-bar-fill"></div></div>
   <div id="load-text">INITIALIZING TERRAIN ENGINE...</div>
 </div>
@@ -413,6 +441,13 @@
 <div id="status-msg">MOTORS ARMED — READY TO FLY</div>
 
 <!-- LEFT PANEL -->
+<!-- TOP-DOWN CAMERA (vista cenital del recorrido) -->
+<div id="topdown-wrap">
+  <canvas id="topdown-canvas"></canvas>
+  <div class="topdown-label">◈ VISTA CENITAL</div>
+  <div class="topdown-crosshair"></div>
+</div>
+
 <div id="left-panel" class="side-panel">
   <div class="panel-title">◈ POSITION</div>
   <div class="data-row">
@@ -551,6 +586,13 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -599,6 +641,13 @@ let sunLight, ambientLight, hemiLight, fillLight;
 let skyDome, stars, cityLights, cloudMeshes = [];
 let shadowPlane, waterMesh;
 let clock;
+// ── Hyperrealism: post-processing & reflections ──
+let composer, bloomPass, fxaaPass, grainPass;
+let envCubeCamera, envCubeTarget;
+let envCaptureTimer = 0;
+const HYPER_MATS = []; // materiales que reciben el reflejo de entorno en vivo
+// Vista cenital (top-down) — segunda cámara/renderer independiente
+let topdownRenderer, topdownCamera;
 
 // ── ENHANCED NOISE FUNCTIONS ──
 function noise2D(x, z, freq, amp) {
@@ -650,6 +699,18 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 6000);
   camera.position.set(0, 0.35, 2.9);
 
+  // ── VISTA CENITAL — cámara secundaria mirando hacia abajo, sigue al dron ──
+  const topdownCanvas = document.getElementById('topdown-canvas');
+  topdownRenderer = new THREE.WebGLRenderer({ canvas: topdownCanvas, antialias: true, alpha: false });
+  topdownRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  topdownRenderer.outputEncoding = THREE.sRGBEncoding;
+  topdownRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  topdownRenderer.toneMappingExposure = 1.1;
+  topdownCamera = new THREE.OrthographicCamera(-60, 60, 60, -60, 0.1, 2000);
+  topdownCamera.position.set(0, 200, 0);
+  topdownCamera.up.set(0, 0, -1); // para que "arriba" en pantalla = -Z (norte), heading coherente con minimapa
+  topdownCamera.lookAt(0, 0, 0);
+
   // ── ENHANCED LIGHTING SETUP ──
   // Soft ambient (blue-sky bounce)
   ambientLight = new THREE.AmbientLight(0xc8d8f0, 0.35);
@@ -691,7 +752,105 @@ function initThree() {
   buildHomeMarker();
   buildObstacleTowers();
 
+  // ── REFLEJOS DE ENTORNO (cubemap dinámico) ──
+  // Capturamos el cielo + escena en un cubemap y lo usamos como envMap en
+  // metales, lentes y agua: reflejos físicamente plausibles en vez de un
+  // material plano sin brillo.
+  setupEnvironmentReflections();
+
+  // ── PIPELINE DE POSTPROCESADO HIPERREALISTA (bloom + FXAA + grano/viñeta) ──
+  setupPostProcessing();
+
   window.addEventListener('resize', onResize);
+}
+
+// ── Captura de entorno (cubemap) para reflejos PBR realistas ──
+function setupEnvironmentReflections() {
+  envCubeTarget = new THREE.WebGLCubeRenderTarget(256, {
+    format: THREE.RGBFormat,
+    generateMipmaps: true,
+    minFilter: THREE.LinearMipmapLinearFilter,
+    encoding: THREE.sRGBEncoding,
+  });
+  envCubeCamera = new THREE.CubeCamera(2, 4000, envCubeTarget);
+  envCubeCamera.position.set(0, 8, 0);
+  scene.add(envCubeCamera);
+
+  if ('environment' in scene) scene.environment = envCubeTarget.texture;
+
+  scene.traverse(obj => {
+    if (!obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach(m => {
+      if (!m || !m.isMeshStandardMaterial) return;
+      // Metales / superficies pulidas / cristal / agua → reciben reflejo nítido
+      const isPolished = m.metalness >= 0.4 || m.roughness <= 0.12;
+      if (isPolished) {
+        m.envMap = envCubeTarget.texture;
+        m.envMapIntensity = 1.0 + (1 - m.roughness) * 0.6;
+        m.needsUpdate = true;
+        HYPER_MATS.push(m);
+      }
+    });
+  });
+
+  // Primera captura inmediata (cielo + terreno ya construidos)
+  envCubeCamera.update(renderer, scene);
+}
+
+// ── Composer: Bloom cinematográfico + FXAA + grano de cámara/viñeta ──
+function setupPostProcessing() {
+  if (typeof THREE.EffectComposer === 'undefined') return; // fallback silencioso si el CDN externo falla
+
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+
+  bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.55,   // strength — resplandor del sol, LEDs y balizas
+    0.55,   // radius
+    0.86    // threshold — solo brillos intensos hacen bloom (no lava la escena)
+  );
+  composer.addPass(bloomPass);
+
+  // Pase final: viñeta sutil + grano fílmico ligero — sensación de cámara
+  // real de dron en vez de un render "de videojuego" plano.
+  grainPass = new THREE.ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      time: { value: 0 },
+      vignetteStrength: { value: 0.32 },
+      grainAmount: { value: 0.025 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform float time, vignetteStrength, grainAmount;
+      varying vec2 vUv;
+      float rnd(vec2 co){ return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
+      void main() {
+        vec4 color = texture2D(tDiffuse, vUv);
+        vec2 centered = vUv - 0.5;
+        float vig = 1.0 - dot(centered, centered) * vignetteStrength * 2.2;
+        color.rgb *= clamp(vig, 0.0, 1.0);
+        float grain = (rnd(vUv * vec2(1920.0, 1080.0) + time) - 0.5) * grainAmount;
+        color.rgb += grain;
+        gl_FragColor = color;
+      }
+    `
+  }, 'tDiffuse');
+  composer.addPass(grainPass);
+
+  fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+  const pr = renderer.getPixelRatio();
+  fxaaPass.material.uniforms['resolution'].value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
+  fxaaPass.renderToScreen = true;
+  composer.addPass(fxaaPass);
+
+  composer.setSize(window.innerWidth, window.innerHeight);
 }
 
 // ── ENHANCED SKY with sun disc ──
@@ -844,10 +1003,26 @@ function buildTerrain() {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
+  // ── Textura de detalle procedural (micro-relieve tipo césped) ──
+  // El color por vértice da la "macro" variación de zonas; esta textura
+  // tileada aporta la "micro" textura (brizna a brizna) que hace que el
+  // terreno deje de verse plano/pintado al volar bajo o en la vista cenital.
+  const detail = buildGrassDetailTextures();
+  const detailRepeat = 260; // veces que se repite sobre los 4000m del terreno
+
   const mat = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.85,
+    roughness: 0.88,
     metalness: 0.0,
+    map: detail.map,
+    normalMap: detail.normalMap,
+    normalScale: new THREE.Vector2(0.65, 0.65),
+    roughnessMap: detail.roughnessMap,
+  });
+  [mat.map, mat.normalMap, mat.roughnessMap].forEach(tex => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(detailRepeat, detailRepeat);
+    if (renderer) tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   });
 
   terrainMesh = new THREE.Mesh(geo, mat);
@@ -860,6 +1035,97 @@ function buildTerrain() {
   terrainMesh.userData.SIZE = SIZE;
 }
 
+// ── Genera texturas tileables de césped (diffuse / normal / roughness) ──
+// 100% procedural en <canvas>, sin descargas externas — un manojo de
+// briznas finas con orientación e intensidad aleatoria, convertidas luego
+// en un normal map mediante un filtro Sobel simple.
+function buildGrassDetailTextures() {
+  const SZ = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = SZ; canvas.height = SZ;
+  const ctx = canvas.getContext('2d');
+
+  // Base neutra (gris medio = no altera el color del vértice al multiplicar)
+  ctx.fillStyle = '#bdbdbd';
+  ctx.fillRect(0, 0, SZ, SZ);
+
+  // Briznas de césped: trazos cortos, finos, con leve variación tonal
+  for (let i = 0; i < 5200; i++) {
+    const x = Math.random() * SZ, y = Math.random() * SZ;
+    const len = 2 + Math.random() * 4;
+    const ang = Math.random() * Math.PI * 2;
+    const tone = 150 + Math.random() * 90; // 150-240 sobre fondo 189
+    ctx.strokeStyle = `rgba(${tone*0.7|0},${tone},${tone*0.6|0},0.55)`;
+    ctx.lineWidth = 0.6 + Math.random() * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+    ctx.stroke();
+  }
+  // Motas de tierra/sombra dispersas para romper repetición
+  for (let i = 0; i < 700; i++) {
+    const x = Math.random() * SZ, y = Math.random() * SZ;
+    const r = 1 + Math.random() * 2.5;
+    ctx.fillStyle = `rgba(90,80,60,${0.08 + Math.random()*0.1})`;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+
+  const map = new THREE.CanvasTexture(canvas);
+  map.needsUpdate = true;
+
+  // Roughness map: derivado de luminancia (briznas = más rugosas/mate, motas = algo más lisas)
+  const imgData = ctx.getImageData(0, 0, SZ, SZ);
+  const data = imgData.data;
+  const roughCanvas = document.createElement('canvas');
+  roughCanvas.width = SZ; roughCanvas.height = SZ;
+  const rctx = roughCanvas.getContext('2d');
+  const roughData = rctx.createImageData(SZ, SZ);
+  // Normal map: filtro Sobel simple sobre la luminancia
+  const normCanvas = document.createElement('canvas');
+  normCanvas.width = SZ; normCanvas.height = SZ;
+  const nctx = normCanvas.getContext('2d');
+  const normData = nctx.createImageData(SZ, SZ);
+
+  const lum = (x, y) => {
+    const xi = (x + SZ) % SZ, yi = (y + SZ) % SZ;
+    const idx = (yi * SZ + xi) * 4;
+    return (data[idx] + data[idx+1] + data[idx+2]) / 765;
+  };
+
+  for (let y = 0; y < SZ; y++) {
+    for (let x = 0; x < SZ; x++) {
+      const idx = (y * SZ + x) * 4;
+      const l = lum(x, y);
+
+      const rough = 200 - l * 60; // briznas brillantes → ligeramente más mate
+      roughData.data[idx] = roughData.data[idx+1] = roughData.data[idx+2] = Math.max(150, Math.min(220, rough));
+      roughData.data[idx+3] = 255;
+
+      const tl = lum(x-1,y-1), t = lum(x,y-1), tr = lum(x+1,y-1);
+      const l_ = lum(x-1,y), r_ = lum(x+1,y);
+      const bl = lum(x-1,y+1), b = lum(x,y+1), br = lum(x+1,y+1);
+      const dx = (tr + 2*r_ + br) - (tl + 2*l_ + bl);
+      const dy = (bl + 2*b + br) - (tl + 2*t + tr);
+      const strength = 2.2;
+      const nx = -dx * strength, ny = -dy * strength, nz = 1.0;
+      const len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+      normData.data[idx]   = ((nx/len) * 0.5 + 0.5) * 255;
+      normData.data[idx+1] = ((ny/len) * 0.5 + 0.5) * 255;
+      normData.data[idx+2] = ((nz/len) * 0.5 + 0.5) * 255;
+      normData.data[idx+3] = 255;
+    }
+  }
+  rctx.putImageData(roughData, 0, 0);
+  nctx.putImageData(normData, 0, 0);
+
+  const roughnessMap = new THREE.CanvasTexture(roughCanvas);
+  const normalMap = new THREE.CanvasTexture(normCanvas);
+  roughnessMap.needsUpdate = true;
+  normalMap.needsUpdate = true;
+
+  return { map, normalMap, roughnessMap };
+}
+
 // ── AGUA — pequeños estanques de parque ──
 function buildWater() {
   const waterPositions = [
@@ -868,13 +1134,18 @@ function buildWater() {
     { x: -350, z: -220, r: 35 },
   ];
   waterPositions.forEach(wp => {
-    const wgeo = new THREE.CircleGeometry(wp.r, 40);
-    const wmat = new THREE.MeshStandardMaterial({
-      color: 0x3a88b8,
-      roughness: 0.04,
-      metalness: 0.25,
+    const wgeo = new THREE.CircleGeometry(wp.r, 48);
+    // Material físico: clearcoat simula la fina película de tensión
+    // superficial del agua y el envMap aporta reflejo de cielo/nubes real.
+    const wmat = new THREE.MeshPhysicalMaterial({
+      color: 0x2c6f93,
+      roughness: 0.06,
+      metalness: 0.0,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      reflectivity: 0.6,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.9,
     });
     const w = new THREE.Mesh(wgeo, wmat);
     w.rotation.x = -Math.PI / 2;
@@ -1437,21 +1708,21 @@ function buildDrone() {
 
   // Body
   const topGeo = new THREE.BoxGeometry(0.62*S, 0.16*S, 0.92*S);
-  const topMat = new THREE.MeshStandardMaterial({ color: COL_TOP, roughness:0.25, metalness:0.15 });
+  const topMat = new THREE.MeshPhysicalMaterial({ color: COL_TOP, roughness:0.22, metalness:0.15, clearcoat:0.8, clearcoatRoughness:0.18 });
   const top = new THREE.Mesh(topGeo, topMat);
   top.position.set(0, 0.08*S, -0.04*S);
   top.castShadow = true;
   group.add(top);
 
   const bodyGeo = new THREE.BoxGeometry(0.46*S, 0.16*S, 0.74*S);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: COL_SIDE, roughness:0.3, metalness:0.1 });
+  const bodyMat = new THREE.MeshPhysicalMaterial({ color: COL_SIDE, roughness:0.28, metalness:0.1, clearcoat:0.7, clearcoatRoughness:0.2 });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
   body.position.set(0, -0.06*S, -0.02*S);
   body.castShadow = true;
   group.add(body);
 
   const noseGeo = new THREE.BoxGeometry(0.34*S, 0.14*S, 0.18*S);
-  const noseMat = new THREE.MeshStandardMaterial({ color: COL_TOP, roughness:0.25, metalness:0.12 });
+  const noseMat = new THREE.MeshPhysicalMaterial({ color: COL_TOP, roughness:0.22, metalness:0.12, clearcoat:0.8, clearcoatRoughness:0.18 });
   const nose = new THREE.Mesh(noseGeo, noseMat);
   nose.position.set(0, 0.05*S, -0.48*S);
   group.add(nose);
@@ -1631,7 +1902,18 @@ function buildDrone() {
   gimbalGroup.add(lens);
 
   const glassGeo = new THREE.CircleGeometry(0.05*S, 16);
-  const glassMat = new THREE.MeshStandardMaterial({ color: COL_LENS, roughness:0.0, metalness:0.1, transparent:true, opacity:0.85 });
+  const glassMat = new THREE.MeshPhysicalMaterial({
+    color: COL_LENS,
+    roughness: 0.04,
+    metalness: 0.0,
+    transmission: 0.9,   // vidrio real: refracta lo que hay detrás en vez de solo difuminar opacidad
+    thickness: 0.05,
+    ior: 1.5,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.03,
+    transparent: true,
+    opacity: 0.95,
+  });
   const glass = new THREE.Mesh(glassGeo, glassMat);
   glass.rotation.y = Math.PI;
   glass.position.set(0, 0, -0.142*S);
@@ -1901,12 +2183,12 @@ function updatePhysics(dt) {
     SIM.altHold = SIM.pos.y;
   }
 
-  // Smooth yaw input with soft ramp — Q = rotar izquierda, E = rotar derecha
+  // Smooth yaw input with soft ramp — coherente con pitch/roll, evita giros bruscos
   if (KEYS['e']) SIM.input.yaw = ema(SIM.input.yaw, -0.9, 0.16);
   else if (KEYS['q']) SIM.input.yaw = ema(SIM.input.yaw, 0.9, 0.16);
   else SIM.input.yaw *= 0.85;
 
-  // Smooth pitch/roll input — W=adelante, S=atrás, A=izquierda, D=derecha
+  // Smooth pitch/roll input with soft ramp
   if (KEYS['w']) SIM.input.pitch = ema(SIM.input.pitch, -0.85 * mc.rot, 0.15);
   else if (KEYS['s']) SIM.input.pitch = ema(SIM.input.pitch, 0.85 * mc.rot, 0.15);
   else SIM.input.pitch *= 0.80;
@@ -1927,15 +2209,22 @@ function updatePhysics(dt) {
 
   // Yaw
   SIM.rot.yaw += SIM.input.yaw * 2.2 * dt * mc.rot;
+  // Normalizar el yaw acumulado al rango [-π, π]. Sin esto, tras vuelos
+  // largos con muchas vueltas el valor crece sin límite y Math.sin/Math.cos
+  // pierden precisión angular progresivamente, lo que con el tiempo se
+  // percibe como controles "invertidos" o desincronizados del rumbo real.
+  if (SIM.rot.yaw > Math.PI) SIM.rot.yaw -= Math.PI * 2;
+  else if (SIM.rot.yaw < -Math.PI) SIM.rot.yaw += Math.PI * 2;
   SIM.heading = ((SIM.rot.yaw * 180 / Math.PI) % 360 + 360) % 360;
 
   const sinYaw = Math.sin(SIM.rot.yaw);
   const cosYaw = Math.cos(SIM.rot.yaw);
   const sinPitch = Math.sin(SIM.rot.pitch);
 
-  const fwd = -sinPitch * mc.sp;
-  // roll negativo (joystick derecha) → sde positivo → vel.x += cosYaw * sde → +X = derecha visual
-  const sde = -SIM.rot.roll * mc.sp * 1.8;
+  // fwd: positivo = avanzar (W). sde: positivo = desplazarse a la derecha
+  // visualmente cuando el dron se inclina a la derecha (roll negativo en pantalla).
+  const fwd = sinPitch * mc.sp;
+  const sde = SIM.rot.roll * mc.sp * 1.8;
 
   // Smooth acceleration — apply wind
   const windScale = SIM.flightMode === 'P-GPS' ? 1.0 : 0.5;
@@ -1955,6 +2244,45 @@ function updatePhysics(dt) {
     SIM.pos.y = groundH + 0.12;
     SIM.vel.y = Math.max(SIM.vel.y, 0);
     if (thrNorm < 0.05) { SIM.vel.x *= 0.7; SIM.vel.z *= 0.7; }
+  }
+
+  // Colisión con torres/antenas — tratadas como cilindros verticales.
+  // Si el dron entra dentro del radio de una torre estando por debajo de
+  // su altura, se empuja hacia afuera radialmente (como un choque real)
+  // y se amortigua la velocidad de avance, en vez de dejarlo atravesarla.
+  const DRONE_RADIUS = 0.5;
+  for (let i = 0; i < TOWERS.length; i++) {
+    const t = TOWERS[i];
+    const dx = SIM.pos.x - t.x;
+    const dz = SIM.pos.z - t.z;
+    const distXZ = Math.sqrt(dx*dx + dz*dz);
+    const minDist = t.r + DRONE_RADIUS;
+    const belowTop = SIM.pos.y < t.h + 0.3;
+    if (distXZ < minDist && belowTop) {
+      if (distXZ < 0.0001) {
+        // Caso degenerado (centro exacto): empuja en una dirección arbitraria
+        SIM.pos.x += minDist;
+      } else {
+        const push = (minDist - distXZ);
+        const nx = dx / distXZ, nz = dz / distXZ;
+        SIM.pos.x += nx * push;
+        SIM.pos.z += nz * push;
+        // Anula la componente de velocidad que apunta hacia la torre (choque)
+        const velDot = SIM.vel.x * nx + SIM.vel.z * nz;
+        if (velDot < 0) {
+          SIM.vel.x -= velDot * nx;
+          SIM.vel.z -= velDot * nz;
+        }
+        // Pequeño rebote/freno para que el impacto se sienta físico
+        SIM.vel.x *= 0.55;
+        SIM.vel.z *= 0.55;
+      }
+      const nowT = performance.now();
+      if (!SIM._lastCollisionMsg || nowT - SIM._lastCollisionMsg > 1500) {
+        showStatus('⚠ COLISIÓN CON OBSTÁCULO');
+        SIM._lastCollisionMsg = nowT;
+      }
+    }
   }
 
   // Extended world bounds for 4000x4000 scenario
@@ -2104,6 +2432,57 @@ function updateCamera(dt) {
 }
 
 // ═══════════════════════════════════════════
+//  VISTA CENITAL (top-down) — cámara vertical hacia abajo
+//  Sigue al dron en X/Z y en altura, mirando recto hacia el suelo,
+//  mostrando el recorrido y los obstáculos cercanos. El campo de
+//  visión se ajusta dinámicamente según la altitud real (AGL) del
+//  dron: más bajo = vista más cercana/detallada, más alto = vista
+//  más amplia, igual que una cámara de dron real.
+// ═══════════════════════════════════════════
+const TOPDOWN_MIN_HALF = 12;   // medio-ancho visible (m) cuando el dron vuela muy bajo
+const TOPDOWN_MAX_HALF = 220;  // medio-ancho visible (m) cuando el dron vuela muy alto
+const TOPDOWN_CAM_OFFSET = 250; // altura de la cámara cenital por encima del dron
+
+function updateTopdownCamera() {
+  if (!topdownCamera || !topdownRenderer) return;
+
+  // La cámara siempre va por encima del dron, a una altura fija respecto
+  // a él, de modo que el zoom (frustum) sea lo único que cambie con la
+  // altitud — así el movimiento vertical del dron se percibe claramente.
+  topdownCamera.position.set(SIM.pos.x, SIM.pos.y + TOPDOWN_CAM_OFFSET, SIM.pos.z);
+  topdownCamera.lookAt(SIM.pos.x, SIM.pos.y, SIM.pos.z);
+
+  // Campo de visión proporcional a la altitud real sobre el terreno (AGL):
+  // a ras de suelo se ve un área pequeña y detallada; volando alto se
+  // amplía el encuadre para abarcar más terreno, como el zoom de una
+  // cámara de dron real ajustándose a la distancia al suelo.
+  const agl = Math.max(0, SIM.altitude);
+  const half = Math.max(
+    TOPDOWN_MIN_HALF,
+    Math.min(TOPDOWN_MAX_HALF, TOPDOWN_MIN_HALF + agl * 0.9)
+  );
+  topdownCamera.left = -half;
+  topdownCamera.right = half;
+  topdownCamera.top = half;
+  topdownCamera.bottom = -half;
+  topdownCamera.updateProjectionMatrix();
+
+  // Sincronizar exposición/tono con el modo día-noche del renderer
+  // principal — sin esto, la vista cenital se queda siempre con brillo
+  // de día aunque se active el modo nocturno.
+  topdownRenderer.toneMappingExposure = renderer.toneMappingExposure;
+
+  topdownRenderer.render(scene, topdownCamera);
+}
+
+function onTopdownResize() {
+  const wrap = document.getElementById('topdown-wrap');
+  if (!wrap || !topdownRenderer) return;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  topdownRenderer.setSize(w, h, false);
+}
+
+// ═══════════════════════════════════════════
 //  NIGHT MODE
 // ═══════════════════════════════════════════
 let nightT = 0;
@@ -2136,6 +2515,17 @@ function updateNightMode(dt) {
   if (cityLights) cityLights.visible = nightT > 0.4;
 
   renderer.toneMappingExposure = Math.max(0.3, 1.1 - nightT * 0.7);
+
+  // De noche el bloom debe ser más intenso (las luces destacan más sobre
+  // el negro) y el grano de cámara sube ligeramente, como en sensores
+  // reales con poca luz.
+  if (bloomPass) {
+    bloomPass.strength = 0.55 + nightT * 0.65;
+    bloomPass.threshold = Math.max(0.55, 0.86 - nightT * 0.3);
+  }
+  if (grainPass) {
+    grainPass.uniforms.grainAmount.value = 0.025 + nightT * 0.02;
+  }
 
   // Mantener el dron siempre visible en modo nocturno: encender su luz
   // dedicada y reforzar las LEDs de navegación a medida que oscurece.
@@ -2507,6 +2897,12 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) {
+    composer.setSize(window.innerWidth, window.innerHeight);
+    const pr = renderer.getPixelRatio();
+    if (fxaaPass) fxaaPass.material.uniforms['resolution'].value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
+  }
+  onTopdownResize();
 }
 
 // ═══════════════════════════════════════════
@@ -2520,12 +2916,31 @@ function animate() {
   updateDroneMesh();
   updateCamera(dt);
   updateNightMode(dt);
+  updateTopdownCamera();
   updateEnvironment(dt);
   updateTrailTimer();
   updateHUD();
   animateBeacons();
 
-  renderer.render(scene, camera);
+  // Refrescar el cubemap de reflejos cada ~20 frames (suficiente para luz
+  // día/noche cambiante; barato porque es de baja resolución 256px)
+  if (envCubeCamera) {
+    envCaptureTimer++;
+    if (envCaptureTimer % 20 === 0) {
+      droneMesh.visible = false; // evitar que el dron se auto-refleje en su propio cuerpo
+      envCubeCamera.position.set(SIM.pos.x, Math.max(SIM.pos.y, 4), SIM.pos.z);
+      envCubeCamera.update(renderer, scene);
+      droneMesh.visible = true;
+    }
+  }
+
+  if (grainPass) grainPass.uniforms.time.value = performance.now() * 0.001;
+
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2551,14 +2966,14 @@ async function init() {
   }
 
   initThree();
+  onTopdownResize();
 
   setupJoystick('js-left', 'js-left-knob',
     (x, y) => {
-      // x positivo (derecha) = yaw negativo = rotación a la derecha (Three.js: yaw neg = horario)
+      // Yaw: stick a la derecha = giro horario (igual que tecla E) → yaw negativo
       SIM.input.yaw = -x * 0.8;
       if (Math.abs(y) > 0.05) {
         SIM._jsThrottleActive = true;
-        // y negativo (arriba) = subir, y positivo (abajo) = bajar
         SIM.input.throttle = Math.max(-0.5, Math.min(1, SIM.input.throttle - y * 0.04));
       } else {
         SIM._jsThrottleActive = false;
@@ -2569,9 +2984,9 @@ async function init() {
 
   setupJoystick('js-right', 'js-right-knob',
     (x, y) => {
-      // y negativo (arriba) = avanzar, y positivo (abajo) = retroceder
+      // Pitch: stick adelante (arriba, y negativo) = avanzar (igual que tecla W) → pitch negativo
       SIM.input.pitch = y * 0.85;
-      // x positivo (derecha) = ir a la derecha: roll negativo mueve a la derecha
+      // Roll: stick a la derecha = inclinación/desplazamiento a la derecha (igual que tecla D) → roll negativo
       SIM.input.roll = -x * 0.85;
     },
     () => { SIM.input.pitch = 0; SIM.input.roll = 0; }
