@@ -2580,9 +2580,17 @@ function updateNightMode(dt) {
     // Color cálido fijo (no proporcional al color base de cada pieza):
     // así las piezas oscuras (motores, brazos negros, etc.) también se
     // vuelven visibles de noche y no solo las piezas claras.
-    const emissiveStrength = nightT * 0.45;
+    // NOTA: de noche renderer.toneMappingExposure cae hasta 0.3 (ver más
+    // abajo), y ese exposure comprime TAMBIÉN el emissive antes de
+    // mostrarse en pantalla. Por eso el valor base aquí debe ser varias
+    // veces más alto de lo que parecería necesario, para que lo que
+    // realmente llega a pantalla después del exposure reducido sea
+    // claramente visible (y de paso supere el threshold del bloom para
+    // que el dron brille en vez de quedar como silueta apagada).
+    const emissiveStrength = nightT * 0.65;
     droneMesh.userData.nightEmissiveMats.forEach(({ mat }) => {
-      mat.emissive.setRGB(emissiveStrength, emissiveStrength * 0.92, emissiveStrength * 0.75);
+      mat.emissive.setRGB(emissiveStrength, emissiveStrength * 0.9, emissiveStrength * 0.7);
+      mat.emissiveIntensity = 1.0;
     });
   }
 
