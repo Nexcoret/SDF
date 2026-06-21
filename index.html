@@ -463,11 +463,166 @@
   #load-bar-track { width: 300px; height: 2px; background: rgba(0,255,65,0.1); border: 1px solid var(--border); }
   #load-bar-fill { height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 8px var(--green); transition: width 0.3s; }
   #load-text { font-size: 10px; color: rgba(0,255,65,0.5); letter-spacing: 2px; font-family: 'Share Tech Mono'; }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 1000;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(0,255,65,0.07) 0%, transparent 55%),
+      linear-gradient(160deg, #04140a 0%, #060c06 55%, #020402 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+  }
+  #login-screen::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,255,65,0.035) 0px, rgba(0,255,65,0.035) 1px, transparent 1px, transparent 3px);
+    opacity: 0.5;
+  }
+  #login-screen::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.65) 100%);
+  }
+  .login-card {
+    position: relative; z-index: 2;
+    width: 360px; max-width: 90vw;
+    background: var(--panel);
+    border: 1px solid var(--border-bright);
+    box-shadow: 0 0 0 1px rgba(0,255,65,0.08), 0 0 40px rgba(0,255,65,0.15), 0 20px 60px rgba(0,0,0,0.6);
+    padding: 34px 30px 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    backdrop-filter: blur(6px);
+    animation: loginFadeIn 0.6s ease both;
+  }
+  @keyframes loginFadeIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .login-corner { position: absolute; width: 16px; height: 16px; pointer-events: none; }
+  .login-corner.tl { top: -1px; left: -1px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+  .login-corner.tr { top: -1px; right: -1px; border-top: 2px solid var(--green); border-right: 2px solid var(--green); }
+  .login-corner.bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--green); border-left: 2px solid var(--green); }
+  .login-corner.br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
+  .login-logo-wrap {
+    width: 88px; height: 88px; border-radius: 50%;
+    border: 1px solid var(--border-bright);
+    box-shadow: 0 0 18px rgba(0,255,65,0.35), inset 0 0 12px rgba(0,255,65,0.1);
+    overflow: hidden; margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: #02110a;
+  }
+  .login-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .login-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 19px; letter-spacing: 4px; color: var(--green);
+    text-shadow: 0 0 12px var(--green); text-align: center;
+  }
+  .login-subtitle {
+    font-size: 11px; letter-spacing: 2.5px; color: rgba(0,255,65,0.45);
+    text-transform: uppercase; margin-bottom: 18px; text-align: center;
+  }
+  .login-field { width: 100%; margin-bottom: 14px; }
+  .login-field label {
+    display: block; font-size: 10px; letter-spacing: 2px; color: var(--green-dim);
+    text-transform: uppercase; margin-bottom: 5px; font-weight: 600;
+  }
+  .login-input-wrap { position: relative; }
+  .login-input-wrap .icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; color: var(--green-dim); opacity: 0.8; pointer-events: none;
+  }
+  .login-field input {
+    width: 100%;
+    background: rgba(0,20,8,0.6);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px; letter-spacing: 1px;
+    padding: 10px 12px 10px 32px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .login-field input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 10px rgba(0,255,65,0.25);
+  }
+  .login-field input::placeholder { color: rgba(232,240,232,0.25); }
+  #login-error {
+    width: 100%; min-height: 16px;
+    font-size: 11px; letter-spacing: 1px; color: var(--red);
+    text-shadow: 0 0 6px rgba(255,51,51,0.5);
+    margin-bottom: 8px; text-align: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  #login-error.show { opacity: 1; }
+  #login-btn {
+    width: 100%; margin-top: 6px;
+    background: linear-gradient(180deg, rgba(0,255,65,0.18), rgba(0,255,65,0.06));
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 14px; letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 11px 0;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  }
+  #login-btn:hover { box-shadow: 0 0 16px rgba(0,255,65,0.4); background: linear-gradient(180deg, rgba(0,255,65,0.28), rgba(0,255,65,0.1)); }
+  #login-btn:active { transform: scale(0.98); }
+  .login-footer {
+    margin-top: 18px; font-size: 9px; letter-spacing: 1.5px;
+    color: rgba(0,255,65,0.3); text-align: center; line-height: 1.6;
+  }
+  .login-shake { animation: loginShake 0.4s; }
+  @keyframes loginShake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-7px); }
+    40%, 60% { transform: translateX(7px); }
+  }
 </style>
 </head>
 <body>
 
-<div id="loading-screen">
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card" id="login-card">
+    <div class="login-corner tl"></div>
+    <div class="login-corner tr"></div>
+    <div class="login-corner bl"></div>
+    <div class="login-corner br"></div>
+
+    <div class="login-logo-wrap">
+      <img src="https://res.cloudinary.com/dway4iqeh/image/upload/v1782085535/WhatsApp_Image_2026-06-21_at_12.49.43_ks96tu.jpg" alt="Logo Securitas RPA">
+    </div>
+    <div class="login-title">RPA SECURITAS</div>
+    <div class="login-subtitle">Acceso al simulador de vuelo</div>
+
+    <form id="login-form" autocomplete="off" style="width:100%;">
+      <div class="login-field">
+        <label for="login-user">Usuario</label>
+        <div class="login-input-wrap">
+          <span class="icon">&#9679;</span>
+          <input type="text" id="login-user" placeholder="Ingrese su usuario" autocomplete="username">
+        </div>
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Contraseña</label>
+        <div class="login-input-wrap">
+          <span class="icon">&#128274;</span>
+          <input type="password" id="login-pass" placeholder="Ingrese su contraseña" autocomplete="current-password">
+        </div>
+      </div>
+      <div id="login-error"></div>
+      <button type="submit" id="login-btn">Ingresar</button>
+    </form>
+
+    <div class="login-footer">SISTEMA DE ENTRENAMIENTO DE VUELO<br>ACCESO RESTRINGIDO &mdash; PERSONAL AUTORIZADO</div>
+  </div>
+</div>
+
+<div id="loading-screen" style="display:none;">
   <div class="logo">SIMULADOR RPA SECURITAS</div>
   <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO</div>
   <div id="load-bar-track"><div id="load-bar-fill"></div></div>
@@ -1362,6 +1517,20 @@ function buildSky() {
 // ── SEMI-URBAN HYPERREALISTIC TERRAIN ──
 // Inspirado en paisaje semi-urbano: colinas suaves con jardines geométricos,
 // franjas de flores de colores, senderos, áreas verdes y zona urbana.
+// ── Sectores de riscos/quebrada — definidos a nivel global para que tanto
+// el terreno como la vegetación de risco (buildCliffVegetation) usen
+// exactamente las mismas zonas.
+const RISK_SECTORS = [
+  // Suroeste — sector original ("Quebrada del Sur")
+  { cx: -340, cz: -340, radius: 190, seed: 0 },
+  // Noreste — "Cañón del Águila"
+  { cx:  660, cz:  600, radius: 195, seed: 17 },
+  // Sureste — "Risco del Cóndor"
+  { cx:  660, cz: -660, radius: 180, seed: 33 },
+  // Norte lejano — "Quebrada Honda"
+  { cx:  -60, cz:  720, radius: 165, seed: 51 },
+];
+
 function buildTerrain() {
   const W = 768, H = 768;
   const SIZE = 4000;
@@ -1376,16 +1545,6 @@ function buildTerrain() {
   // Cada uno es independiente (no se superponen) y queda dentro del área
   // jugable ampliada de ±900m, con margen de seguridad respecto al borde y
   // lejos de la zona urbana central, lagos, jardines y torres existentes.
-  const RISK_SECTORS = [
-    // Suroeste — sector original ("Quebrada del Sur")
-    { cx: -340, cz: -340, radius: 190, seed: 0 },
-    // Noreste — "Cañón del Águila"
-    { cx:  660, cz:  600, radius: 195, seed: 17 },
-    // Sureste — "Risco del Cóndor"
-    { cx:  660, cz: -660, radius: 180, seed: 33 },
-    // Norte lejano — "Quebrada Honda"
-    { cx:  -60, cz:  720, radius: 165, seed: 51 },
-  ];
 
   // Calcula la altura de un sector de risco/quebrada en (wx,wz) relativo a
   // su centro (cx,cz). 'seed' desplaza las fases del ruido para que cada
@@ -2046,52 +2205,77 @@ function buildUrbanFacilities() {
 function buildVegetation() {
   const dummy = new THREE.Object3D();
 
-  // ── 1. ÁRBOLES DE COPA AMPLIA (tipo ornamental de parque) ──
-  const BROAD_COUNT = 180;
-  const broadTrunkGeo  = new THREE.CylinderGeometry(0.22, 0.34, 4.5, 7);
+  // ── 1. ÁRBOLES DE COPA AMPLIA (tipo ornamental de parque) — MEJORADO ──
+  // 3 capas de follaje en vez de 2, con paleta de 4 tonos de verde
+  // intercalados por instancia para romper la uniformidad, y troncos con
+  // ligera curvatura/inclinación variable para look más orgánico.
+  const BROAD_COUNT = 220;
+  const broadTrunkGeo  = new THREE.CylinderGeometry(0.22, 0.36, 4.8, 7);
   const broadTrunkMat  = new THREE.MeshStandardMaterial({ color: 0x4a2f14, roughness: 0.97 });
-  const broadFol1Geo   = new THREE.SphereGeometry(3.8, 9, 7);  // copa baja
-  const broadFol1Mat   = new THREE.MeshStandardMaterial({ color: 0x1e5a14, roughness: 0.88 });
-  const broadFol2Geo   = new THREE.SphereGeometry(2.8, 8, 6);  // copa alta
-  const broadFol2Mat   = new THREE.MeshStandardMaterial({ color: 0x256b18, roughness: 0.86 });
+  const broadFol1Geo   = new THREE.SphereGeometry(3.6, 8, 6);  // copa baja, ancha
+  const broadFol2Geo   = new THREE.SphereGeometry(2.9, 8, 6);  // copa media
+  const broadFol3Geo   = new THREE.SphereGeometry(2.0, 7, 5);  // copa alta/remate
+  const broadFolColors = [0x1e5a14, 0x256b18, 0x2c7a1e, 0x1a4f10, 0x336f22];
+  const broadFolMats   = broadFolColors.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.87 }));
 
-  const bTrunk  = new THREE.InstancedMesh(broadTrunkGeo,  broadTrunkMat,  BROAD_COUNT);
-  const bFol1   = new THREE.InstancedMesh(broadFol1Geo,   broadFol1Mat,   BROAD_COUNT);
-  const bFol2   = new THREE.InstancedMesh(broadFol2Geo,   broadFol2Mat,   BROAD_COUNT);
-  [bTrunk, bFol1, bFol2].forEach(m => { m.castShadow = true; m.receiveShadow = true; });
+  const bTrunk = new THREE.InstancedMesh(broadTrunkGeo, broadTrunkMat, BROAD_COUNT);
+  // Cada capa de follaje usa un material de color distinto por grupo (round-robin)
+  const bFol1Groups = broadFolMats.map(m => new THREE.InstancedMesh(broadFol1Geo, m, Math.ceil(BROAD_COUNT / broadFolMats.length)));
+  const bFol2Groups = broadFolMats.map(m => new THREE.InstancedMesh(broadFol2Geo, m, Math.ceil(BROAD_COUNT / broadFolMats.length)));
+  const bFol3Groups = broadFolMats.map(m => new THREE.InstancedMesh(broadFol3Geo, m, Math.ceil(BROAD_COUNT / broadFolMats.length)));
+  const bFolCounters = broadFolMats.map(() => 0);
+
+  [bTrunk, ...bFol1Groups, ...bFol2Groups, ...bFol3Groups].forEach(m => { m.castShadow = true; m.receiveShadow = true; });
 
   const broadPositions = [
     // Fila de árboles bordeando sendero principal (NW → centro)
     ...Array.from({length: 12}, (_, i) => ({ x: -20 - i*10, z: 28 + Math.sin(i)*4, forced: true })),
     // Árboles agrupados en colinas
-    ...Array.from({length: 20}, (_, i) => ({ x: -100 + pseudoRand(i*3.7, i*1.2)*160 - 80, z: -80 + pseudoRand(i*1.9, i*4.1)*140 - 70, forced: false })),
+    ...Array.from({length: 24}, (_, i) => ({ x: -100 + pseudoRand(i*3.7, i*1.2)*160 - 80, z: -80 + pseudoRand(i*1.9, i*4.1)*140 - 70, forced: false })),
     // Árboles bordeando canchas
     ...Array.from({length: 8}, (_, i) => ({ x: 55, z: -30 - i*12, forced: true })),
     ...Array.from({length: 8}, (_, i) => ({ x: 155, z: -30 - i*12, forced: true })),
   ];
 
   let bi = 0;
-  broadPositions.forEach(bp => {
-    if (bi >= BROAD_COUNT) return;
-    const bx = bp.x, bz = bp.z;
-    if (!bp.forced && Math.sqrt(bx*bx + bz*bz) < 45) return;
+  function placeBroadTree(bx, bz) {
     const bh = getTerrainHeight(bx, bz);
-    const sc = 0.75 + pseudoRand(bx * 0.02, bz * 0.02) * 0.55;
-    dummy.position.set(bx, bh + 2.2 * sc, bz);
+    const sc = 0.75 + pseudoRand(bx * 0.02, bz * 0.02) * 0.6;
+    const lean = (pseudoRand(bx * 0.07, bz * 0.05) - 0.5) * 0.1;
+    const matIdx = bi % broadFolMats.length;
+    const gi = bFolCounters[matIdx]++;
+
+    // Tronco con leve inclinación natural
+    dummy.position.set(bx, bh + 2.4 * sc, bz);
     dummy.scale.set(sc, sc, sc);
-    dummy.rotation.y = pseudoRand(bx, bz) * Math.PI * 2;
+    dummy.rotation.set(lean, pseudoRand(bx, bz) * Math.PI * 2, lean * 0.6);
     dummy.updateMatrix();
     bTrunk.setMatrixAt(bi, dummy.matrix);
-    // Copa baja — excéntrica para naturalidad
-    dummy.position.set(bx + pseudoRand(bx, bz) * 0.8 - 0.4, bh + 5.2 * sc, bz + pseudoRand(bx+1, bz)*0.6 - 0.3);
-    dummy.scale.set(sc * (0.9 + pseudoRand(bx*0.05, bz*0.05)*0.3), sc * 0.75, sc * (0.9 + pseudoRand(bz*0.05, bx*0.04)*0.3));
+
+    // Copa baja — ancha y excéntrica
+    dummy.rotation.set(0, 0, 0);
+    dummy.position.set(bx + pseudoRand(bx, bz) * 1.0 - 0.5 + lean * 4, bh + 5.0 * sc, bz + pseudoRand(bx+1, bz)*0.7 - 0.35);
+    dummy.scale.set(sc * (0.9 + pseudoRand(bx*0.05, bz*0.05)*0.35), sc * 0.7, sc * (0.9 + pseudoRand(bz*0.05, bx*0.04)*0.35));
     dummy.updateMatrix();
-    bFol1.setMatrixAt(bi, dummy.matrix);
-    // Copa alta
-    dummy.position.set(bx, bh + 7.2 * sc, bz);
-    dummy.scale.set(sc * 0.7, sc * 0.6, sc * 0.7);
+    bFol1Groups[matIdx].setMatrixAt(gi, dummy.matrix);
+
+    // Copa media — desplazada para silueta irregular
+    dummy.position.set(bx + pseudoRand(bx+5, bz+5)*1.2 - 0.6 + lean * 6.5, bh + 7.0 * sc, bz + pseudoRand(bx+6, bz+3)*1.0 - 0.5);
+    dummy.scale.set(sc * (0.75 + pseudoRand(bx*0.04, bz*0.06)*0.3), sc * 0.62, sc * (0.75 + pseudoRand(bz*0.04, bx*0.06)*0.3));
     dummy.updateMatrix();
-    bFol2.setMatrixAt(bi, dummy.matrix);
+    bFol2Groups[matIdx].setMatrixAt(gi, dummy.matrix);
+
+    // Copa alta — remate puntiagudo
+    dummy.position.set(bx + lean * 8, bh + 8.6 * sc, bz);
+    dummy.scale.set(sc * 0.55, sc * 0.5, sc * 0.55);
+    dummy.updateMatrix();
+    bFol3Groups[matIdx].setMatrixAt(gi, dummy.matrix);
+  }
+
+  broadPositions.forEach(bp => {
+    if (bi >= BROAD_COUNT) return;
+    if (!bp.forced && Math.sqrt(bp.x*bp.x + bp.z*bp.z) < 45) return;
+    placeBroadTree(bp.x, bp.z);
     bi++;
   });
   // Rellenar scatter aleatorio hasta completar
@@ -2102,17 +2286,20 @@ function buildVegetation() {
     if (dist0 < 50) { bi++; continue; }
     const bh = getTerrainHeight(bx, bz);
     if (bh < 0.3 || bh > 15) { bi++; continue; }
-    const sc = 0.65 + pseudoRand(bx * 0.02, bz * 0.02) * 0.6;
-    dummy.position.set(bx, bh + 2.2 * sc, bz);
-    dummy.scale.set(sc, sc, sc); dummy.rotation.y = pseudoRand(bx, bz) * Math.PI * 2;
-    dummy.updateMatrix(); bTrunk.setMatrixAt(bi, dummy.matrix);
-    dummy.position.set(bx, bh + 5.2 * sc, bz);
-    dummy.scale.set(sc, sc * 0.75, sc); dummy.updateMatrix(); bFol1.setMatrixAt(bi, dummy.matrix);
-    dummy.position.set(bx, bh + 7.0 * sc, bz);
-    dummy.scale.set(sc * 0.65, sc * 0.6, sc * 0.65); dummy.updateMatrix(); bFol2.setMatrixAt(bi, dummy.matrix);
+    placeBroadTree(bx, bz);
     bi++;
   }
-  [bTrunk, bFol1, bFol2].forEach(m => { m.instanceMatrix.needsUpdate = true; scene.add(m); });
+  // Pad de instancias no usadas (si bFolCounters no llenó perfecto cada grupo)
+  bFolCounters.forEach((count, idx) => {
+    const cap = bFol1Groups[idx].count;
+    for (let k = count; k < cap; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      bFol1Groups[idx].setMatrixAt(k, dummy.matrix);
+      bFol2Groups[idx].setMatrixAt(k, dummy.matrix);
+      bFol3Groups[idx].setMatrixAt(k, dummy.matrix);
+    }
+  });
+  [bTrunk, ...bFol1Groups, ...bFol2Groups, ...bFol3Groups].forEach(m => { m.instanceMatrix.needsUpdate = true; scene.add(m); });
 
   // ── 2. PALMERAS (tropicales — como las de la imagen) ──
   const PALM_COUNT = 60;
@@ -2222,38 +2409,415 @@ function buildVegetation() {
     });
   });
 
-  // ── 4. ARBUSTOS ORNAMENTALES — bordes de sendero con flores ──
-  const SHRUB_COUNT = 250;
-  const shrubGeo = new THREE.SphereGeometry(0.9, 7, 6);
-  const shrubColors = [0x2a6820, 0x336622, 0x1e5518, 0x3a7028];
-  const shrubMeshes = shrubColors.map(c =>
-    new THREE.InstancedMesh(shrubGeo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 }), Math.floor(SHRUB_COUNT / shrubColors.length))
-  );
-  shrubMeshes.forEach((sm, si_) => {
+  // ── 4. ARBUSTOS ORNAMENTALES — bordes de sendero con flores — MEJORADO ──
+  // En vez de una sola esfera por arbusto, cada instancia se compone de
+  // 3 "lóbulos" (esferas pequeñas superpuestas en distintas posiciones/escalas)
+  // que dan una silueta irregular y mucho más natural que una esfera perfecta.
+  const SHRUB_COUNT = 320;
+  const shrubLobeGeoA = new THREE.SphereGeometry(0.62, 6, 5);
+  const shrubLobeGeoB = new THREE.SphereGeometry(0.48, 6, 5);
+  const shrubLobeGeoC = new THREE.SphereGeometry(0.38, 5, 4);
+  const shrubColors = [0x2a6820, 0x336622, 0x1e5518, 0x3a7028, 0x255c1c];
+  const perMesh = Math.floor(SHRUB_COUNT / shrubColors.length);
+
+  const shrubGroupsA = shrubColors.map(c => new THREE.InstancedMesh(shrubLobeGeoA, new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 }), perMesh));
+  const shrubGroupsB = shrubColors.map(c => new THREE.InstancedMesh(shrubLobeGeoB, new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 }), perMesh));
+  const shrubGroupsC = shrubColors.map(c => new THREE.InstancedMesh(shrubLobeGeoC, new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 }), perMesh));
+
+  shrubColors.forEach((c, si_) => {
     let idx = 0;
-    const perMesh = Math.floor(SHRUB_COUNT / shrubColors.length);
     while (idx < perMesh) {
       const px = (pseudoRand(si_*200 + idx * 5.3, idx * 2.1 + si_*50) - 0.5) * 800;
       const pz = (pseudoRand(si_*300 + idx * 2.9, idx * 0.9 + si_*70) - 0.5) * 800;
       if (Math.sqrt(px*px + pz*pz) < 35) { idx++; continue; }
       const h = getTerrainHeight(px, pz);
       if (h < 0.2 || h > 13) { idx++; continue; }
-      const sc = 0.45 + pseudoRand(px * 0.03, pz * 0.03) * 0.65;
-      dummy.position.set(px, h + 0.9 * sc, pz);
-      dummy.scale.set(sc, sc * 0.7, sc);
-      dummy.rotation.y = pseudoRand(px + 1, pz + 1) * Math.PI * 2;
+      const sc = 0.5 + pseudoRand(px * 0.03, pz * 0.03) * 0.7;
+      const baseY = h + 0.5 * sc;
+      const rotBase = pseudoRand(px + 1, pz + 1) * Math.PI * 2;
+
+      // Lóbulo central — más grande
+      dummy.position.set(px, baseY, pz);
+      dummy.scale.set(sc * 1.1, sc * 0.85, sc * 1.1);
+      dummy.rotation.y = rotBase;
       dummy.updateMatrix();
-      sm.setMatrixAt(idx, dummy.matrix);
+      shrubGroupsA[si_].setMatrixAt(idx, dummy.matrix);
+
+      // Lóbulo lateral 1
+      const a1 = rotBase + 1.4;
+      dummy.position.set(px + Math.cos(a1) * 0.45 * sc, baseY + 0.15 * sc, pz + Math.sin(a1) * 0.45 * sc);
+      dummy.scale.set(sc * 0.85, sc * 0.7, sc * 0.85);
+      dummy.updateMatrix();
+      shrubGroupsB[si_].setMatrixAt(idx, dummy.matrix);
+
+      // Lóbulo lateral 2 — más pequeño, da el toque irregular final
+      const a2 = rotBase - 2.0;
+      dummy.position.set(px + Math.cos(a2) * 0.5 * sc, baseY - 0.05 * sc, pz + Math.sin(a2) * 0.5 * sc);
+      dummy.scale.set(sc * 0.7, sc * 0.6, sc * 0.7);
+      dummy.updateMatrix();
+      shrubGroupsC[si_].setMatrixAt(idx, dummy.matrix);
+
       idx++;
     }
-    for (let k = idx; k < perMesh; k++) {
-      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
-      sm.setMatrixAt(k, dummy.matrix);
-    }
-    sm.instanceMatrix.needsUpdate = true;
-    sm.castShadow = true;
-    scene.add(sm);
+    [shrubGroupsA[si_], shrubGroupsB[si_], shrubGroupsC[si_]].forEach(sm => {
+      sm.instanceMatrix.needsUpdate = true;
+      sm.castShadow = true;
+      sm.receiveShadow = true;
+      scene.add(sm);
+    });
   });
+
+  // ── 5. VEGETACIÓN DE MONTAÑA / RISCO / ACANTILADO ──
+  // Arbustos resecos y coníferas aisladas que crecen en las grietas y
+  // terrazas de los sectores rocosos (RISK_SECTORS) y en la cordillera
+  // perimetral, dando vida a las laderas sin vegetación tupida tipo parque.
+  buildCliffVegetation();
+
+  // ── 6. CAMINOS DE GRAVA/TIERRA CON VEGETACIÓN LATERAL ──
+  buildDirtTrailsWithFoliage();
+}
+
+// ── VEGETACIÓN DE MONTAÑA / RISCO / ACANTILADO ──
+// Coníferas resecas y arbustos achaparrados que crecen aferrados a las
+// terrazas y bordes de los sectores rocosos, más una franja de matorral
+// en la base de la cordillera perimetral lejana. Usa InstancedMesh para
+// mantener el rendimiento aun con cientos de elementos adicionales.
+function buildCliffVegetation() {
+  const dummy = new THREE.Object3D();
+
+  // Coníferas tipo "pino de risco" — silueta cónica, troncos delgados,
+  // perfectas para anclarse en terrazas estrechas de roca.
+  const CONIFER_COUNT = 260;
+  const conTrunkGeo = new THREE.CylinderGeometry(0.13, 0.22, 3.2, 6);
+  const conTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3e2c18, roughness: 0.96 });
+  const conFolGeoA  = new THREE.ConeGeometry(1.5, 2.6, 7);
+  const conFolGeoB  = new THREE.ConeGeometry(1.15, 2.2, 7);
+  const conFolGeoC  = new THREE.ConeGeometry(0.8, 1.7, 6);
+  const conFolColors = [0x1f4a22, 0x254f24, 0x183d1a, 0x2a5728];
+  const conFolMats = conFolColors.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 }));
+  const perCon = Math.ceil(CONIFER_COUNT / conFolMats.length);
+
+  const conTrunk = new THREE.InstancedMesh(conTrunkGeo, conTrunkMat, CONIFER_COUNT);
+  const conFolA = conFolMats.map(m => new THREE.InstancedMesh(conFolGeoA, m, perCon));
+  const conFolB = conFolMats.map(m => new THREE.InstancedMesh(conFolGeoB, m, perCon));
+  const conFolC = conFolMats.map(m => new THREE.InstancedMesh(conFolGeoC, m, perCon));
+  const conCounters = conFolMats.map(() => 0);
+
+  let ci = 0;
+  let guard = 0;
+  while (ci < CONIFER_COUNT && guard < CONIFER_COUNT * 40) {
+    guard++;
+    // Elegir un sector de risco al azar (round-robin determinista) y un
+    // punto dentro de su anillo de terraza media-alta (no en el fondo de
+    // la quebrada ni en el centro plano).
+    const rs = RISK_SECTORS[ci % RISK_SECTORS.length];
+    const ang = pseudoRand(ci * 7.13, ci * 2.7 + rs.seed) * Math.PI * 2;
+    const rad = rs.radius * (0.25 + pseudoRand(ci * 3.3 + rs.seed, ci * 1.1) * 0.7);
+    const wx = rs.cx + Math.cos(ang) * rad;
+    const wz = rs.cz + Math.sin(ang) * rad;
+    const h = getTerrainHeight(wx, wz);
+    // Solo en zonas de roca/terraza (entre la base del risco y antes de nieve)
+    if (h < 16 || h > 130) { ci++; continue; }
+
+    const sc = 0.55 + pseudoRand(wx * 0.04, wz * 0.04) * 0.6;
+    const lean = (pseudoRand(wx * 0.09, wz * 0.07) - 0.5) * 0.22; // se inclinan buscando luz
+    const matIdx = ci % conFolMats.length;
+    const gi = conCounters[matIdx]++;
+    if (gi >= perCon) { ci++; continue; }
+
+    dummy.position.set(wx, h + 1.6 * sc, wz);
+    dummy.scale.set(sc, sc, sc);
+    dummy.rotation.set(lean, pseudoRand(wx, wz) * Math.PI * 2, lean * 0.7);
+    dummy.updateMatrix();
+    conTrunk.setMatrixAt(ci, dummy.matrix);
+
+    dummy.rotation.set(0, pseudoRand(wx+2, wz+2) * Math.PI * 2, 0);
+    dummy.position.set(wx + lean * 2, h + 3.3 * sc, wz);
+    dummy.scale.set(sc, sc, sc);
+    dummy.updateMatrix();
+    conFolA[matIdx].setMatrixAt(gi, dummy.matrix);
+
+    dummy.position.set(wx + lean * 3.2, h + 4.6 * sc, wz);
+    dummy.scale.set(sc * 0.92, sc * 0.95, sc * 0.92);
+    dummy.updateMatrix();
+    conFolB[matIdx].setMatrixAt(gi, dummy.matrix);
+
+    dummy.position.set(wx + lean * 4.2, h + 5.7 * sc, wz);
+    dummy.scale.set(sc * 0.85, sc * 0.9, sc * 0.85);
+    dummy.updateMatrix();
+    conFolC[matIdx].setMatrixAt(gi, dummy.matrix);
+
+    ci++;
+  }
+  // Pad de instancias sobrantes
+  conCounters.forEach((count, idx) => {
+    for (let k = count; k < perCon; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      conFolA[idx].setMatrixAt(k, dummy.matrix);
+      conFolB[idx].setMatrixAt(k, dummy.matrix);
+      conFolC[idx].setMatrixAt(k, dummy.matrix);
+    }
+  });
+  for (let k = ci; k < CONIFER_COUNT; k++) {
+    dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+    conTrunk.setMatrixAt(k, dummy.matrix);
+  }
+  [conTrunk, ...conFolA, ...conFolB, ...conFolC].forEach(m => {
+    m.instanceMatrix.needsUpdate = true; m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  });
+
+  // Arbustos achaparrados/resecos de risco — matorral bajo y duro propio
+  // de terreno rocoso, repartido en los mismos sectores y en la falda de
+  // la cordillera perimetral.
+  const SCRUB_COUNT = 380;
+  const scrubGeo = new THREE.SphereGeometry(0.5, 5, 4);
+  const scrubColors = [0x4a5226, 0x5a5e30, 0x3f4a22, 0x55502a];
+  const perScrub = Math.ceil(SCRUB_COUNT / scrubColors.length);
+  const scrubMeshes = scrubColors.map(c => new THREE.InstancedMesh(scrubGeo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 }), perScrub));
+  const scrubCounters = scrubColors.map(() => 0);
+
+  let si = 0, sguard = 0;
+  while (si < SCRUB_COUNT && sguard < SCRUB_COUNT * 30) {
+    sguard++;
+    let wx, wz, h;
+    if (si % 3 !== 0) {
+      // 2/3 en sectores de risco
+      const rs = RISK_SECTORS[si % RISK_SECTORS.length];
+      const ang = pseudoRand(si * 5.1, si * 3.3 + rs.seed) * Math.PI * 2;
+      const rad = rs.radius * (0.15 + pseudoRand(si * 2.2 + rs.seed, si * 0.8) * 0.9);
+      wx = rs.cx + Math.cos(ang) * rad;
+      wz = rs.cz + Math.sin(ang) * rad;
+      h = getTerrainHeight(wx, wz);
+      if (h < 12 || h > 150) { si++; continue; }
+    } else {
+      // 1/3 en la falda de la cordillera perimetral lejana (justo donde
+      // empieza a subir el terreno, ~880-1000m de radio)
+      const ang = pseudoRand(si * 4.4, si * 1.6) * Math.PI * 2;
+      const rad = 870 + pseudoRand(si * 3.7, si * 2.1) * 160;
+      wx = Math.cos(ang) * rad;
+      wz = Math.sin(ang) * rad;
+      h = getTerrainHeight(wx, wz);
+      if (h < 10 || h > 170) { si++; continue; }
+    }
+
+    const sc = 0.4 + pseudoRand(wx * 0.05, wz * 0.05) * 0.7;
+    const matIdx = si % scrubColors.length;
+    const gi = scrubCounters[matIdx]++;
+    if (gi >= perScrub) { si++; continue; }
+    dummy.position.set(wx, h + 0.4 * sc, wz);
+    dummy.scale.set(sc * 1.3, sc * 0.8, sc * 1.3);
+    dummy.rotation.y = pseudoRand(wx, wz) * Math.PI * 2;
+    dummy.updateMatrix();
+    scrubMeshes[matIdx].setMatrixAt(gi, dummy.matrix);
+    si++;
+  }
+  scrubCounters.forEach((count, idx) => {
+    for (let k = count; k < perScrub; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      scrubMeshes[idx].setMatrixAt(k, dummy.matrix);
+    }
+  });
+  scrubMeshes.forEach(m => { m.instanceMatrix.needsUpdate = true; m.castShadow = true; m.receiveShadow = true; scene.add(m); });
+}
+
+// ── CAMINOS DE GRAVA/TIERRA CON VEGETACIÓN LATERAL ──
+// Genera senderos curvos visibles (banda de geometría sobre el terreno,
+// no solo color de vértice) que serpentean por el escenario, y puebla sus
+// costados con árboles y arbustos para reforzar la sensación de camino
+// natural entre vegetación — igual que un sendero de montaña o parque.
+function buildDirtTrailsWithFoliage() {
+  const dummy = new THREE.Object3D();
+
+  // Definición de 5 senderos como curvas Catmull-Rom; cada uno evita el
+  // núcleo urbano central (radio ~45m) y se mantiene dentro del área
+  // jugable. Los puntos están pensados para conectar zonas de colinas,
+  // bordes de risco y la cordillera lejana, simulando senderos de tierra
+  // que llevan de la zona de parque hacia el terreno más agreste.
+  const trailDefs = [
+    { // Sendero NO — hacia la "Quebrada del Sur"
+      pts: [[-50, 60], [-130, 30], [-210, -60], [-280, -180], [-330, -280]],
+      width: 4.2,
+    },
+    { // Sendero NE — hacia "Cañón del Águila"
+      pts: [[60, 50], [180, 120], [320, 220], [480, 360], [600, 500]],
+      width: 3.8,
+    },
+    { // Sendero SE — hacia "Risco del Cóndor"
+      pts: [[70, -60], [200, -160], [350, -300], [500, -480], [610, -600]],
+      width: 4.0,
+    },
+    { // Sendero N — hacia "Quebrada Honda"
+      pts: [[-10, 90], [-30, 220], [-50, 380], [-55, 540], [-60, 660]],
+      width: 3.6,
+    },
+    { // Sendero perimetral corto — colinas oeste
+      pts: [[-110, -40], [-220, 10], [-340, 60], [-440, 130]],
+      width: 3.4,
+    },
+  ];
+
+  const allTreeSpots = []; // recolecta puntos para vegetación lateral
+
+  trailDefs.forEach(td => {
+    const curvePts = td.pts.map(p => new THREE.Vector3(p[0], 0, p[1]));
+    const curve = new THREE.CatmullRomCurve3(curvePts);
+    const segments = Math.max(24, td.pts.length * 14);
+    const samples = curve.getPoints(segments);
+
+    // Construir una franja de geometría (ribbon) que sigue el terreno,
+    // vértice a vértice, para que el sendero de grava se vea como una
+    // superficie real y no solo un tinte de color.
+    const half = td.width / 2;
+    const ribbonVerts = [];
+    const ribbonUVs = [];
+    const ribbonIdx = [];
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const pPrev = samples[Math.max(0, i - 1)];
+      const pNext = samples[Math.min(samples.length - 1, i + 1)];
+      const dir = new THREE.Vector3().subVectors(pNext, pPrev).normalize();
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x);
+
+      // Variación leve de ancho para look orgánico (no franja perfecta)
+      const wJ = half * (0.85 + pseudoRand(p.x * 0.05, p.z * 0.05) * 0.3);
+
+      const lx = p.x + perp.x * wJ, lz = p.z + perp.z * wJ;
+      const rx = p.x - perp.x * wJ, rz = p.z - perp.z * wJ;
+      const ly = getTerrainHeight(lx, lz) + 0.05;
+      const ry = getTerrainHeight(rx, rz) + 0.05;
+
+      ribbonVerts.push(lx, ly, lz, rx, ry, rz);
+      ribbonUVs.push(0, i / samples.length, 1, i / samples.length);
+
+      if (i > 0) {
+        const baseI = (i - 1) * 2;
+        ribbonIdx.push(baseI, baseI + 1, baseI + 2,  baseI + 1, baseI + 3, baseI + 2);
+      }
+    }
+
+    const ribbonGeo = new THREE.BufferGeometry();
+    ribbonGeo.setAttribute('position', new THREE.Float32BufferAttribute(ribbonVerts, 3));
+    ribbonGeo.setAttribute('uv', new THREE.Float32BufferAttribute(ribbonUVs, 2));
+    ribbonGeo.setIndex(ribbonIdx);
+    ribbonGeo.computeVertexNormals();
+
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      color: 0xc6b384, roughness: 0.96, metalness: 0.0,
+    });
+    const ribbonMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    ribbonMesh.receiveShadow = true;
+    scene.add(ribbonMesh);
+
+    // Recolectar puntos a lo largo del trazado (cada ~2 muestras) para
+    // sembrar árboles/arbustos a ambos costados del camino.
+    for (let i = 0; i < samples.length; i += 2) {
+      const p = samples[i];
+      const pPrev = samples[Math.max(0, i - 1)];
+      const pNext = samples[Math.min(samples.length - 1, i + 1)];
+      const dir = new THREE.Vector3().subVectors(pNext, pPrev).normalize();
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x);
+      allTreeSpots.push({ x: p.x, z: p.z, px: perp.x, pz: perp.z, halfW: half });
+    }
+  });
+
+  // ── Vegetación lateral: árboles pequeños + arbustos a ambos lados ──
+  const TRAIL_TREE_COUNT = 200;
+  const ttTrunkGeo = new THREE.CylinderGeometry(0.14, 0.22, 3.0, 6);
+  const ttTrunkMat = new THREE.MeshStandardMaterial({ color: 0x42301a, roughness: 0.96 });
+  const ttFolGeo   = new THREE.SphereGeometry(1.6, 7, 5);
+  const ttFolColors= [0x2a6a1e, 0x317424, 0x255e1a, 0x3a7e2c];
+  const ttFolMats  = ttFolColors.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.88 }));
+  const perTT = Math.ceil(TRAIL_TREE_COUNT / ttFolMats.length);
+
+  const ttTrunk = new THREE.InstancedMesh(ttTrunkGeo, ttTrunkMat, TRAIL_TREE_COUNT);
+  const ttFol   = ttFolMats.map(m => new THREE.InstancedMesh(ttFolGeo, m, perTT));
+  const ttCounters = ttFolMats.map(() => 0);
+
+  const TRAIL_SHRUB_COUNT = 260;
+  const tsGeo = new THREE.SphereGeometry(0.42, 5, 4);
+  const tsColors = [0x2e6a22, 0x3a7028, 0x255818];
+  const perTS = Math.ceil(TRAIL_SHRUB_COUNT / tsColors.length);
+  const tsMeshes = tsColors.map(c => new THREE.InstancedMesh(tsGeo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 }), perTS));
+  const tsCounters = tsColors.map(() => 0);
+
+  let tti = 0, tsi = 0;
+  // Recorrer puntos recolectados con paso para no saturar (muestreo disperso)
+  for (let k = 0; k < allTreeSpots.length && (tti < TRAIL_TREE_COUNT || tsi < TRAIL_SHRUB_COUNT); k += 1) {
+    const sp = allTreeSpots[k];
+    // Alterna lado izquierdo/derecho y deja "huecos" aleatorios para que
+    // no quede una hilera perfecta y uniforme (look más silvestre).
+    const side = (k % 2 === 0) ? 1 : -1;
+    const gapRoll = pseudoRand(sp.x * 0.13 + k, sp.z * 0.11);
+
+    // ── Árbol pequeño lateral (1 de cada ~3 puntos) ──
+    if (tti < TRAIL_TREE_COUNT && gapRoll > 0.45) {
+      const offset = sp.halfW + 1.8 + pseudoRand(sp.x * 0.2, sp.z * 0.2 + k) * 3.5;
+      const tx = sp.x + sp.px * side * offset;
+      const tz = sp.z + sp.pz * side * offset;
+      const th = getTerrainHeight(tx, tz);
+      if (th > 0.2 && th < 70) {
+        const sc = 0.55 + pseudoRand(tx * 0.04, tz * 0.04) * 0.55;
+        dummy.position.set(tx, th + 1.5 * sc, tz);
+        dummy.scale.set(sc, sc, sc);
+        dummy.rotation.y = pseudoRand(tx, tz) * Math.PI * 2;
+        dummy.updateMatrix();
+        ttTrunk.setMatrixAt(tti, dummy.matrix);
+
+        const matIdx = tti % ttFolMats.length;
+        const gi = ttCounters[matIdx]++;
+        if (gi < perTT) {
+          dummy.position.set(tx + pseudoRand(tx+2,tz)*0.6-0.3, th + 3.2 * sc, tz + pseudoRand(tx,tz+2)*0.6-0.3);
+          dummy.scale.set(sc * (0.85 + pseudoRand(tx*0.06,tz*0.06)*0.4), sc * 0.8, sc * (0.85 + pseudoRand(tz*0.06,tx*0.06)*0.4));
+          dummy.updateMatrix();
+          ttFol[matIdx].setMatrixAt(gi, dummy.matrix);
+        }
+        tti++;
+      }
+    }
+
+    // ── Arbusto lateral (más frecuente, más cerca del borde del camino) ──
+    if (tsi < TRAIL_SHRUB_COUNT && gapRoll < 0.8) {
+      const offset2 = sp.halfW + 0.6 + pseudoRand(sp.x * 0.17 + 9, sp.z * 0.13 + k) * 1.8;
+      const sx = sp.x + sp.px * (-side) * offset2;
+      const sz = sp.z + sp.pz * (-side) * offset2;
+      const sh = getTerrainHeight(sx, sz);
+      if (sh > 0.2 && sh < 70) {
+        const sc2 = 0.4 + pseudoRand(sx * 0.05, sz * 0.05) * 0.6;
+        const matIdx2 = tsi % tsColors.length;
+        const gi2 = tsCounters[matIdx2]++;
+        if (gi2 < perTS) {
+          dummy.position.set(sx, sh + 0.38 * sc2, sz);
+          dummy.scale.set(sc2 * 1.2, sc2 * 0.75, sc2 * 1.2);
+          dummy.rotation.y = pseudoRand(sx+3, sz+3) * Math.PI * 2;
+          dummy.updateMatrix();
+          tsMeshes[matIdx2].setMatrixAt(gi2, dummy.matrix);
+        }
+        tsi++;
+      }
+    }
+  }
+
+  // Pad instancias sobrantes
+  ttCounters.forEach((count, idx) => {
+    for (let k = count; k < perTT; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      ttFol[idx].setMatrixAt(k, dummy.matrix);
+    }
+  });
+  for (let k = tti; k < TRAIL_TREE_COUNT; k++) {
+    dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+    ttTrunk.setMatrixAt(k, dummy.matrix);
+  }
+  tsCounters.forEach((count, idx) => {
+    for (let k = count; k < perTS; k++) {
+      dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001, 0.001, 0.001); dummy.updateMatrix();
+      tsMeshes[idx].setMatrixAt(k, dummy.matrix);
+    }
+  });
+
+  [ttTrunk, ...ttFol].forEach(m => { m.instanceMatrix.needsUpdate = true; m.castShadow = true; m.receiveShadow = true; scene.add(m); });
+  tsMeshes.forEach(m => { m.instanceMatrix.needsUpdate = true; m.castShadow = true; m.receiveShadow = true; scene.add(m); });
 }
 
 function getTerrainHeight(x, z) {
@@ -3643,7 +4207,58 @@ async function init() {
   animate();
 }
 
-init();
+// ── LOGIN / PANTALLA DE INICIO ──
+const LOGIN_CREDENTIALS = { user: 'rpasec', pass: 'securitas123' };
+
+function setupLogin() {
+  const loginScreen = document.getElementById('login-screen');
+  const loadingScreen = document.getElementById('loading-screen');
+  const form = document.getElementById('login-form');
+  const card = document.getElementById('login-card');
+  const userInput = document.getElementById('login-user');
+  const passInput = document.getElementById('login-pass');
+  const errorBox = document.getElementById('login-error');
+
+  function showLoginError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+    card.classList.remove('login-shake');
+    void card.offsetWidth; // reinicia animación
+    card.classList.add('login-shake');
+    passInput.value = '';
+    passInput.focus();
+  }
+
+  function attemptLogin(e) {
+    e.preventDefault();
+    const u = userInput.value.trim();
+    const p = passInput.value;
+
+    if (!u || !p) {
+      showLoginError('INGRESE USUARIO Y CONTRASEÑA');
+      return;
+    }
+    if (u !== LOGIN_CREDENTIALS.user || p !== LOGIN_CREDENTIALS.pass) {
+      showLoginError('CREDENCIALES INVÁLIDAS — INTENTE NUEVAMENTE');
+      return;
+    }
+
+    // Acceso correcto
+    errorBox.classList.remove('show');
+    loginScreen.style.transition = 'opacity 0.5s';
+    loginScreen.style.opacity = '0';
+    setTimeout(() => {
+      loginScreen.remove();
+      loadingScreen.style.display = 'flex';
+      init();
+    }, 500);
+  }
+
+  form.addEventListener('submit', attemptLogin);
+  userInput.focus();
+}
+
+setupLogin();
 </script>
 </body>
 </html>
