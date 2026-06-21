@@ -241,6 +241,106 @@
     pointer-events: none;
   }
   .joystick-crosshair { position: absolute; inset: 0; pointer-events: none; }
+
+  /* ── USB GAMEPAD PANEL ── */
+  #gamepad-panel {
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+    z-index: 110;
+    padding: 8px 14px;
+    min-width: 220px;
+    border-radius: 0 0 6px 6px;
+    display: none;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  #gamepad-panel.connected { display: block; }
+  #gamepad-panel .gp-head {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; letter-spacing: 1.5px; color: var(--blue);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  #gamepad-panel .gp-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: gpPulse 1.4s infinite;
+  }
+  @keyframes gpPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  #gamepad-panel .gp-name {
+    font-size: 9px; color: rgba(0,255,65,0.5); margin-bottom: 6px;
+    max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gp-axes { display: flex; gap: 10px; }
+  .gp-axis-block { flex: 1; }
+  .gp-axis-label {
+    font-size: 8px; color: rgba(0,255,65,0.5); letter-spacing: 1px;
+    display: flex; justify-content: space-between; margin-bottom: 2px;
+  }
+  .gp-axis-track {
+    height: 5px; background: rgba(0,255,65,0.1); border: 1px solid var(--border);
+    border-radius: 2px; position: relative; overflow: hidden;
+  }
+  .gp-axis-fill {
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    background: var(--blue); box-shadow: 0 0 4px var(--blue);
+    width: 2px;
+  }
+  #gamepad-toggle-btn {
+    position: fixed; top: 56px; left: 8px;
+    z-index: 109;
+    background: var(--panel); border: 1px solid var(--border);
+    color: rgba(0,255,65,0.55); font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 1px; padding: 4px 8px;
+    border-radius: 0 0 4px 0; cursor: pointer;
+  }
+  #gamepad-toggle-btn.active { color: var(--green); border-color: var(--border-bright); }
+  #gamepad-toggle-btn:hover { color: var(--green); }
+
+  /* ── GAMEPAD MAPPING MODAL ── */
+  #gp-map-overlay {
+    position: fixed; inset: 0; background: rgba(0,8,0,0.85);
+    z-index: 500; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  #gp-map-overlay.show { display: flex; }
+  #gp-map-modal {
+    width: min(480px, 92vw);
+    max-height: 86vh; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--border-bright);
+    border-radius: 6px; padding: 18px 20px;
+    box-shadow: 0 0 30px rgba(0,255,65,0.15);
+    font-family: 'Rajdhani', sans-serif;
+  }
+  #gp-map-modal h3 {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--green); font-size: 14px; letter-spacing: 2px;
+    margin-bottom: 4px; text-shadow: 0 0 8px var(--green);
+  }
+  #gp-map-modal .gp-sub {
+    font-size: 11px; color: rgba(0,255,65,0.5); margin-bottom: 14px;
+  }
+  .gp-map-row {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); padding: 7px 0;
+    font-size: 12px; gap: 10px;
+  }
+  .gp-map-row label { color: rgba(0,255,65,0.75); letter-spacing: 1px; }
+  .gp-map-row select {
+    background: rgba(0,0,0,0.5); color: var(--green);
+    border: 1px solid var(--border); font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; padding: 3px 6px; border-radius: 3px;
+  }
+  .gp-map-row input[type=checkbox] { accent-color: var(--green); }
+  .gp-map-row input[type=range] { accent-color: var(--green); width: 90px; }
+  #gp-map-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  #gp-map-actions button {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 1px;
+    padding: 7px 14px; border-radius: 3px; cursor: pointer;
+    background: rgba(0,255,65,0.08); color: var(--green); border: 1px solid var(--border-bright);
+  }
+  #gp-map-actions button:hover { background: rgba(0,255,65,0.18); }
+  #gp-map-actions button.secondary { color: rgba(0,255,65,0.6); border-color: var(--border); background: transparent; }
   .crosshair-h, .crosshair-v { position: absolute; background: rgba(0,255,65,0.1); }
   .crosshair-h { height: 1px; top: 50%; left: 0; right: 0; transform: translateY(-50%); }
   .crosshair-v { width: 1px; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); }
@@ -547,7 +647,8 @@
   <span>↑/↓</span> Throttle<br>
   <span>N</span> Day/Night<br>
   <span>R</span> RTH<br>
-  <span>C</span> Camera
+  <span>C</span> Camera<br>
+  <span>🎮</span> USB Joystick auto
 </div>
 
 <!-- BOTTOM CONTROLS -->
@@ -581,6 +682,92 @@
     <div class="joystick-outer" id="js-right">
       <div class="joystick-crosshair"><div class="crosshair-h"></div><div class="crosshair-v"></div></div>
       <div class="joystick-inner" id="js-right-knob"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USB GAMEPAD STATUS PANEL -->
+<button id="gamepad-toggle-btn" onclick="openGamepadMapModal()" title="Configurar joystick USB">🎮 JOYSTICK</button>
+<div id="gamepad-panel">
+  <div class="gp-head"><span class="gp-dot"></span> USB GAMEPAD <span id="gp-id-badge" style="margin-left:auto;color:rgba(0,255,65,.4)">#0</span></div>
+  <div class="gp-name" id="gp-name">—</div>
+  <div class="gp-axes">
+    <div class="gp-axis-block">
+      <div class="gp-axis-label"><span>THR</span><span id="gp-val-thr">0.00</span></div>
+      <div class="gp-axis-track"><div class="gp-axis-fill" id="gp-fill-thr"></div></div>
+    </div>
+    <div class="gp-axis-block">
+      <div class="gp-axis-label"><span>YAW</span><span id="gp-val-yaw">0.00</span></div>
+      <div class="gp-axis-track"><div class="gp-axis-fill" id="gp-fill-yaw"></div></div>
+    </div>
+    <div class="gp-axis-block">
+      <div class="gp-axis-label"><span>PITCH</span><span id="gp-val-pitch">0.00</span></div>
+      <div class="gp-axis-track"><div class="gp-axis-fill" id="gp-fill-pitch"></div></div>
+    </div>
+    <div class="gp-axis-block">
+      <div class="gp-axis-label"><span>ROLL</span><span id="gp-val-roll">0.00</span></div>
+      <div class="gp-axis-track"><div class="gp-axis-fill" id="gp-fill-roll"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAMEPAD MAPPING MODAL -->
+<div id="gp-map-overlay">
+  <div id="gp-map-modal">
+    <h3>◈ CONFIGURACIÓN DE JOYSTICK USB</h3>
+    <div class="gp-sub" id="gp-map-status">Esperando joystick… mueve un eje o presiona un botón.</div>
+
+    <div class="gp-map-row">
+      <label>Throttle (gas)</label>
+      <select id="gp-sel-thr"></select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:10px"><input type="checkbox" id="gp-inv-thr"> INV</label>
+    </div>
+    <div class="gp-map-row">
+      <label>Yaw (rotación)</label>
+      <select id="gp-sel-yaw"></select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:10px"><input type="checkbox" id="gp-inv-yaw"> INV</label>
+    </div>
+    <div class="gp-map-row">
+      <label>Pitch (adelante/atrás)</label>
+      <select id="gp-sel-pitch"></select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:10px"><input type="checkbox" id="gp-inv-pitch"> INV</label>
+    </div>
+    <div class="gp-map-row">
+      <label>Roll (izq/der)</label>
+      <select id="gp-sel-roll"></select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:10px"><input type="checkbox" id="gp-inv-roll"> INV</label>
+    </div>
+    <div class="gp-map-row">
+      <label>Zona muerta (deadzone)</label>
+      <input type="range" id="gp-deadzone" min="0" max="0.4" step="0.01" value="0.08">
+      <span id="gp-deadzone-val" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--green)">0.08</span>
+    </div>
+    <div class="gp-map-row">
+      <label>Botón ARM / DISARM</label>
+      <select id="gp-sel-btn-arm"></select>
+    </div>
+    <div class="gp-map-row">
+      <label>Botón RTH</label>
+      <select id="gp-sel-btn-rth"></select>
+    </div>
+    <div class="gp-map-row">
+      <label>Botón cambio de modo</label>
+      <select id="gp-sel-btn-mode"></select>
+    </div>
+    <div class="gp-map-row">
+      <label>Botón PARO DE EMERGENCIA</label>
+      <select id="gp-sel-btn-stop"></select>
+    </div>
+    <div class="gp-map-row" style="border-bottom:none">
+      <label>Gimbal con gatillos/botones</label>
+      <select id="gp-sel-btn-gimbalup"></select>
+      <select id="gp-sel-btn-gimbaldown"></select>
+    </div>
+
+    <div id="gp-map-actions">
+      <button class="secondary" onclick="closeGamepadMapModal()">CERRAR</button>
+      <button onclick="resetGamepadMapping()">RESET</button>
+      <button onclick="saveGamepadMapping()">GUARDAR</button>
     </div>
   </div>
 </div>
@@ -632,6 +819,271 @@ window.addEventListener('keydown', e => {
   if (e.key === ' ') { e.preventDefault(); toggleArm(); }
 });
 window.addEventListener('keyup', e => { KEYS[e.key.toLowerCase()] = false; });
+
+// ═══════════════════════════════════════════
+//  USB GAMEPAD / JOYSTICK SUPPORT (Gamepad API)
+// ═══════════════════════════════════════════
+const GAMEPAD = {
+  index: null,
+  connected: false,
+  id: '',
+  // Mapeo de ejes: índice del eje físico del control para cada función.
+  // -1 = sin asignar. Por defecto se asume un layout típico de joystick de
+  // vuelo / mando estilo Xbox: eje0=X-izq, eje1=Y-izq, eje2=X-der, eje3=Y-der.
+  axisMap: { throttle: 1, yaw: 0, pitch: 3, roll: 2 },
+  invert:  { throttle: false, yaw: true, pitch: false, roll: true },
+  deadzone: 0.08,
+  btnMap: { arm: 0, rth: 3, mode: 2, stop: 1, gimbalUp: 5, gimbalDown: 4 },
+  _prevButtons: {},
+  _learnTarget: null, // string axis/btn key actualmente "escuchando" en el modal
+};
+
+function gpApplyDeadzone(v, dz) {
+  if (Math.abs(v) < dz) return 0;
+  const sign = v > 0 ? 1 : -1;
+  return sign * (Math.abs(v) - dz) / (1 - dz);
+}
+
+function gpGetGamepad() {
+  if (GAMEPAD.index === null) return null;
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  return pads[GAMEPAD.index] || null;
+}
+
+window.addEventListener('gamepadconnected', e => {
+  GAMEPAD.index = e.gamepad.index;
+  GAMEPAD.connected = true;
+  GAMEPAD.id = e.gamepad.id;
+  document.getElementById('gamepad-panel').classList.add('connected');
+  document.getElementById('gamepad-toggle-btn').classList.add('active');
+  document.getElementById('gp-name').textContent = e.gamepad.id;
+  document.getElementById('gp-id-badge').textContent = '#' + e.gamepad.index;
+  populateGamepadMapSelects(e.gamepad);
+  showStatus('🎮 JOYSTICK USB CONECTADO: ' + e.gamepad.id.slice(0, 40));
+});
+
+window.addEventListener('gamepaddisconnected', e => {
+  if (GAMEPAD.index === e.gamepad.index) {
+    GAMEPAD.index = null;
+    GAMEPAD.connected = false;
+    document.getElementById('gamepad-panel').classList.remove('connected');
+    document.getElementById('gamepad-toggle-btn').classList.remove('active');
+    SIM._jsThrottleActive = false;
+    showStatus('⚠ JOYSTICK USB DESCONECTADO');
+  }
+});
+
+// Algunos navegadores (Chrome) ya tienen el gamepad disponible al cargar la
+// página si fue conectado/activado antes de que se disparara el evento
+// 'gamepadconnected'. Por eso además hacemos un chequeo activo al iniciar.
+function gpScanInitial() {
+  const tryDetect = () => {
+    if (GAMEPAD.connected) return true;
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const p of pads) {
+      if (p) {
+        GAMEPAD.index = p.index;
+        GAMEPAD.connected = true;
+        GAMEPAD.id = p.id;
+        document.getElementById('gamepad-panel').classList.add('connected');
+        document.getElementById('gamepad-toggle-btn').classList.add('active');
+        document.getElementById('gp-name').textContent = p.id;
+        document.getElementById('gp-id-badge').textContent = '#' + p.index;
+        populateGamepadMapSelects(p);
+        showStatus('🎮 JOYSTICK USB DETECTADO: ' + p.id.slice(0, 40));
+        return true;
+      }
+    }
+    return false;
+  };
+  if (tryDetect()) return;
+  // Algunos navegadores solo "activan" el gamepad en navigator.getGamepads()
+  // tras una pulsación de botón (no basta con mover un eje, por política de
+  // seguridad). Reintentamos en segundo plano sin bloquear el simulador.
+  const retryHandle = setInterval(() => { if (tryDetect()) clearInterval(retryHandle); }, 1000);
+}
+
+// Lee el gamepad activo y vuelca sus valores en SIM.input, respetando el
+// mismo formato/escala que ya usan teclado y joysticks virtuales en pantalla.
+function pollGamepad() {
+  const gp = gpGetGamepad();
+  if (!gp) return;
+
+  const dz = GAMEPAD.deadzone;
+  const axisVal = (key) => {
+    const idx = GAMEPAD.axisMap[key];
+    if (idx === null || idx === undefined || idx < 0 || idx >= gp.axes.length) return 0;
+    let v = gpApplyDeadzone(gp.axes[idx], dz);
+    if (GAMEPAD.invert[key]) v = -v;
+    return v;
+  };
+
+  const thr = axisVal('throttle');   // -1..1, arriba/empuje
+  const yaw = axisVal('yaw');
+  const pitch = axisVal('pitch');
+  const roll = axisVal('roll');
+
+  // Throttle: el stick físico normalmente queda centrado en 0 = "mantener
+  // altitud" (igual que el joystick virtual). Solo si hay movimiento real
+  // se activa el modo "input manual de gas" (SIM._jsThrottleActive).
+  if (Math.abs(thr) > 0.001) {
+    SIM._jsThrottleActive = true;
+    SIM.input.throttle = Math.max(-0.5, Math.min(1, SIM.input.throttle - thr * 0.045));
+  } else {
+    SIM._jsThrottleActive = false;
+  }
+
+  SIM.input.yaw = yaw * 0.9;
+  SIM.input.pitch = pitch * 0.85;
+  SIM.input.roll = roll * 0.85;
+
+  // Botones — detectar flanco de subida (pressed ahora, no pressed antes)
+  const pressed = (idx) => idx !== null && idx !== undefined && idx >= 0 && gp.buttons[idx] && gp.buttons[idx].pressed;
+  const wasPressed = (key) => GAMEPAD._prevButtons[key];
+
+  const checkEdge = (key, mapIdx, fn) => {
+    const now = pressed(mapIdx);
+    if (now && !wasPressed(key)) fn();
+    GAMEPAD._prevButtons[key] = now;
+  };
+
+  checkEdge('arm', GAMEPAD.btnMap.arm, toggleArm);
+  checkEdge('rth', GAMEPAD.btnMap.rth, triggerRTH);
+  checkEdge('mode', GAMEPAD.btnMap.mode, cycleMode);
+  checkEdge('stop', GAMEPAD.btnMap.stop, emergencyStop);
+
+  // Gimbal: mantener presionado para mover de forma continua (no es flanco)
+  const gimbalStep = 0.9;
+  if (pressed(GAMEPAD.btnMap.gimbalUp)) {
+    const v = Math.max(-90, Math.min(30, SIM.gimbalAngle + gimbalStep));
+    updateGimbal(v);
+    document.getElementById('gimbal-slider').value = v;
+  } else if (pressed(GAMEPAD.btnMap.gimbalDown)) {
+    const v = Math.max(-90, Math.min(30, SIM.gimbalAngle - gimbalStep));
+    updateGimbal(v);
+    document.getElementById('gimbal-slider').value = v;
+  }
+
+  // Refrescar el HUD del panel del gamepad
+  updateGamepadHUD(thr, yaw, pitch, roll);
+
+  // Si el modal de mapeo está abierto, usarlo para "aprender" ejes/botones
+  if (GAMEPAD._learnTarget) gpHandleLearnMode(gp);
+}
+
+function updateGamepadHUD(thr, yaw, pitch, roll) {
+  const setBar = (fillId, valId, v) => {
+    const fill = document.getElementById(fillId);
+    const val = document.getElementById(valId);
+    if (!fill || !val) return;
+    const pct = Math.max(-1, Math.min(1, v)) * 50; // -50%..50% desde el centro
+    fill.style.left = (50 + Math.min(pct, 0)) + '%';
+    fill.style.width = Math.abs(pct) + '%';
+    val.textContent = v.toFixed(2);
+  };
+  setBar('gp-fill-thr', 'gp-val-thr', thr);
+  setBar('gp-fill-yaw', 'gp-val-yaw', yaw);
+  setBar('gp-fill-pitch', 'gp-val-pitch', pitch);
+  setBar('gp-fill-roll', 'gp-val-roll', roll);
+}
+
+// ── MODAL DE MAPEO / CALIBRACIÓN ──
+function populateGamepadMapSelects(gp) {
+  const axisSelects = ['gp-sel-thr', 'gp-sel-yaw', 'gp-sel-pitch', 'gp-sel-roll'];
+  const axisKeys = ['throttle', 'yaw', 'pitch', 'roll'];
+  axisSelects.forEach((id, i) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="-1">— Sin asignar —</option>' +
+      gp.axes.map((_, idx) => `<option value="${idx}">Eje ${idx}</option>`).join('');
+    sel.value = GAMEPAD.axisMap[axisKeys[i]];
+    sel.onchange = () => { GAMEPAD.axisMap[axisKeys[i]] = parseInt(sel.value); };
+  });
+
+  document.getElementById('gp-inv-thr').checked = GAMEPAD.invert.throttle;
+  document.getElementById('gp-inv-yaw').checked = GAMEPAD.invert.yaw;
+  document.getElementById('gp-inv-pitch').checked = GAMEPAD.invert.pitch;
+  document.getElementById('gp-inv-roll').checked = GAMEPAD.invert.roll;
+  document.getElementById('gp-inv-thr').onchange = e => GAMEPAD.invert.throttle = e.target.checked;
+  document.getElementById('gp-inv-yaw').onchange = e => GAMEPAD.invert.yaw = e.target.checked;
+  document.getElementById('gp-inv-pitch').onchange = e => GAMEPAD.invert.pitch = e.target.checked;
+  document.getElementById('gp-inv-roll').onchange = e => GAMEPAD.invert.roll = e.target.checked;
+
+  const btnSelects = { 'gp-sel-btn-arm':'arm', 'gp-sel-btn-rth':'rth', 'gp-sel-btn-mode':'mode',
+    'gp-sel-btn-stop':'stop', 'gp-sel-btn-gimbalup':'gimbalUp', 'gp-sel-btn-gimbaldown':'gimbalDown' };
+  Object.keys(btnSelects).forEach(id => {
+    const key = btnSelects[id];
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="-1">— Sin asignar —</option>' +
+      gp.buttons.map((_, idx) => `<option value="${idx}">Botón ${idx}</option>`).join('');
+    sel.value = GAMEPAD.btnMap[key];
+    sel.onchange = () => { GAMEPAD.btnMap[key] = parseInt(sel.value); };
+  });
+
+  const dzSlider = document.getElementById('gp-deadzone');
+  dzSlider.value = GAMEPAD.deadzone;
+  document.getElementById('gp-deadzone-val').textContent = GAMEPAD.deadzone.toFixed(2);
+  dzSlider.oninput = () => {
+    GAMEPAD.deadzone = parseFloat(dzSlider.value);
+    document.getElementById('gp-deadzone-val').textContent = GAMEPAD.deadzone.toFixed(2);
+  };
+}
+
+function gpHandleLearnMode(gp) {
+  // Reservado para una futura mejora de "mueve el eje que quieras asignar";
+  // por ahora el mapeo se hace por selects, que es más fiable entre marcas
+  // de joystick distintas (cada fabricante numera los ejes de forma distinta).
+}
+
+function openGamepadMapModal() {
+  const overlay = document.getElementById('gp-map-overlay');
+  overlay.classList.add('show');
+  const gp = gpGetGamepad();
+  if (gp) {
+    document.getElementById('gp-map-status').textContent =
+      'Conectado: ' + gp.id + ' · ' + gp.axes.length + ' ejes, ' + gp.buttons.length + ' botones.';
+    populateGamepadMapSelects(gp);
+  } else {
+    document.getElementById('gp-map-status').textContent =
+      'No se detecta joystick. Conéctalo por USB y presiona cualquier botón para activarlo.';
+  }
+}
+
+function closeGamepadMapModal() {
+  document.getElementById('gp-map-overlay').classList.remove('show');
+}
+
+function saveGamepadMapping() {
+  try {
+    localStorage.setItem('gp_mapping_v1', JSON.stringify({
+      axisMap: GAMEPAD.axisMap, invert: GAMEPAD.invert,
+      deadzone: GAMEPAD.deadzone, btnMap: GAMEPAD.btnMap
+    }));
+    showStatus('✓ MAPEO DE JOYSTICK GUARDADO');
+  } catch (err) { /* almacenamiento no disponible, no es crítico */ }
+  closeGamepadMapModal();
+}
+
+function resetGamepadMapping() {
+  GAMEPAD.axisMap = { throttle: 1, yaw: 0, pitch: 3, roll: 2 };
+  GAMEPAD.invert  = { throttle: false, yaw: true, pitch: false, roll: true };
+  GAMEPAD.deadzone = 0.08;
+  GAMEPAD.btnMap = { arm: 0, rth: 3, mode: 2, stop: 1, gimbalUp: 5, gimbalDown: 4 };
+  const gp = gpGetGamepad();
+  if (gp) populateGamepadMapSelects(gp);
+  showStatus('MAPEO DE JOYSTICK RESTABLECIDO');
+}
+
+function loadGamepadMapping() {
+  try {
+    const raw = localStorage.getItem('gp_mapping_v1');
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.axisMap) Object.assign(GAMEPAD.axisMap, saved.axisMap);
+    if (saved.invert) Object.assign(GAMEPAD.invert, saved.invert);
+    if (typeof saved.deadzone === 'number') GAMEPAD.deadzone = saved.deadzone;
+    if (saved.btnMap) Object.assign(GAMEPAD.btnMap, saved.btnMap);
+  } catch (err) { /* sin mapeo guardado previamente */ }
+}
 
 // ═══════════════════════════════════════════
 //  THREE.JS SCENE
@@ -911,7 +1363,7 @@ function buildSky() {
 // Inspirado en paisaje semi-urbano: colinas suaves con jardines geométricos,
 // franjas de flores de colores, senderos, áreas verdes y zona urbana.
 function buildTerrain() {
-  const W = 512, H = 512;
+  const W = 768, H = 768;
   const SIZE = 4000;
 
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, W - 1, H - 1);
@@ -920,10 +1372,62 @@ function buildTerrain() {
   const pos = geo.attributes.position;
   const heights = new Float32Array(W * H);
 
+  // ── DEFINICIÓN DE LOS 4 SECTORES DE RISCOS/QUEBRADA ──
+  // Cada uno es independiente (no se superponen) y queda dentro del área
+  // jugable ampliada de ±900m, con margen de seguridad respecto al borde y
+  // lejos de la zona urbana central, lagos, jardines y torres existentes.
+  const RISK_SECTORS = [
+    // Suroeste — sector original ("Quebrada del Sur")
+    { cx: -340, cz: -340, radius: 190, seed: 0 },
+    // Noreste — "Cañón del Águila"
+    { cx:  660, cz:  600, radius: 195, seed: 17 },
+    // Sureste — "Risco del Cóndor"
+    { cx:  660, cz: -660, radius: 180, seed: 33 },
+    // Norte lejano — "Quebrada Honda"
+    { cx:  -60, cz:  720, radius: 165, seed: 51 },
+  ];
+
+  // Calcula la altura de un sector de risco/quebrada en (wx,wz) relativo a
+  // su centro (cx,cz). 'seed' desplaza las fases del ruido para que cada
+  // sector tenga un patrón de terrazas y un trazado de quebrada distintos.
+  function riskSectorHeight(wx, wz, cx, cz, seed) {
+    const cdx = wx - cx, cdz = wz - cz;
+
+    // Mesetas escalonadas tipo risco — terrazas con caras empinadas.
+    // Onda suavizada (no floor/escalón discreto) para que la transición
+    // entre niveles ocurra en una franja angosta, dando caras de roca
+    // abruptas sin generar triángulos dentados en la malla.
+    const terraceRaw = (Math.sin(wx * 0.018 + 2.4 + seed) * Math.cos(wz * 0.016 - 1.0 + seed * 0.7)
+                       + Math.sin(wx * 0.034 - 0.7 + seed * 1.3) * Math.sin(wz * 0.029 + 0.9 + seed) * 0.5);
+    const terraceScaled = (terraceRaw * 0.5 + 0.5) * 4; // 0..4 continuo
+    const levelBase = Math.floor(terraceScaled);
+    const levelFrac = terraceScaled - levelBase;
+    const stepSharp = levelFrac < 0.78
+      ? 0
+      : (() => { const t = (levelFrac - 0.78) / 0.22; return t * t * (3 - 2 * t); })();
+    const terraceLevel = levelBase + stepSharp;
+    const cliffH = 14 + terraceLevel * 16; // hasta ~62m de risco
+
+    let riskH = cliffH;
+
+    // Quebrada: grieta profunda y serpenteante que atraviesa el sector
+    const riverPath = Math.sin(cdx * 0.012 + 0.8 + seed) * 70; // curva de la quebrada
+    const distToRiver = Math.abs(cdz - riverPath);
+    const riverWidth = 26 + Math.sin(cdx * 0.02 + seed) * 8;
+    if (distToRiver < riverWidth) {
+      const riverT = 1 - distToRiver / riverWidth;
+      const wallEase = riverT * riverT; // pared empinada pero continua
+      riskH -= wallEase * (cliffH + 8);
+    }
+
+    return Math.max(-6, riskH); // fondo de quebrada ligeramente bajo el nivel 0
+  }
+
   for (let i = 0; i < W; i++) {
     for (let j = 0; j < H; j++) {
       const nx = (i / W) - 0.5;
       const nz = (j / H) - 0.5;
+      const wx = nx * SIZE, wz = nz * SIZE; // coordenadas mundo en metros
 
       // Colinas suaves estilo parque urbano — amplitudes moderadas, frecuencias bajas
       let h = 0;
@@ -947,6 +1451,42 @@ function buildTerrain() {
       const seFlat = Math.min(seDist / 0.12, 1.0);
       h *= 0.15 + seFlat * 0.85;
 
+      // ── CORDILLERA PERIMETRAL (telón de fondo lejano) ──
+      // Sube gradualmente desde ~940m de radio (justo fuera del área de
+      // vuelo operativa ampliada de ±900m) hasta sus picos hacia ~1360m.
+      // Se mantiene relativamente cerca a propósito: con la niebla
+      // atmosférica del escenario (FogExp2) la visibilidad práctica cae a
+      // casi cero pasados los ~1000-1100m. Es puramente visual: el dron no
+      // puede salir del área jugable (clamp ±900 en updatePhysics).
+      const rWorld = Math.sqrt(wx * wx + wz * wz);
+      if (rWorld > 940) {
+        const ridgeT = Math.min(1, (rWorld - 940) / 420); // 0 en 940m → 1 en 1360m
+        const ridgeNoise =
+            Math.sin(wx * 0.0042 + 1.3) * Math.cos(wz * 0.0037 - 0.6) * 110
+          + Math.sin(wx * 0.0091 - 0.4) * Math.sin(wz * 0.0083 + 1.7) * 60
+          + Math.sin(wx * 0.021  + 2.1) * Math.cos(wz * 0.018  - 1.1) * 22;
+        const peaks = Math.max(0, ridgeNoise) * ridgeT;
+        const ease = ridgeT * ridgeT * (3 - 2 * ridgeT);
+        h = h * (1 - ease) + (140 * ease + peaks);
+      }
+
+      // ── ZONAS DE RISCOS Y QUEBRADA (práctica de vuelo técnico) ──
+      // 4 sectores independientes repartidos por el área jugable ampliada.
+      // Cada vértice solo puede pertenecer a un sector (no se solapan por
+      // diseño de coordenadas), así que basta aplicar el primero que matchee.
+      for (let s = 0; s < RISK_SECTORS.length; s++) {
+        const rs = RISK_SECTORS[s];
+        const cdx = wx - rs.cx, cdz = wz - rs.cz;
+        const cDist = Math.sqrt(cdx * cdx + cdz * cdz);
+        if (cDist < rs.radius) {
+          const cT = 1 - Math.min(1, cDist / rs.radius);
+          const easeC = cT * cT * (3 - 2 * cT);
+          const riskH = riskSectorHeight(wx, wz, rs.cx, rs.cz, rs.seed);
+          h = h * (1 - easeC) + riskH * easeC;
+          break;
+        }
+      }
+
       heights[i + j * W] = h;
     }
   }
@@ -957,7 +1497,7 @@ function buildTerrain() {
   pos.needsUpdate = true;
   geo.computeVertexNormals();
 
-  // Paleta de colores semi-urbana: verde césped, tierra sendero, pasto oscuro
+  // Paleta de colores semi-urbana + roca/nieve para riscos y cordillera
   const colors = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
     const h  = pos.getY(i);
@@ -967,14 +1507,45 @@ function buildTerrain() {
 
     // Micro-noise para variación de cesped natural
     const grassVar = Math.sin(wx * 0.18 + 0.5) * Math.cos(wz * 0.22 - 0.3) * 0.5 + 0.5;
-    // Patrón de senderos (paths) — líneas diagonales de tierra beige
+    // Patrón de senderos (paths) — líneas diagonales de tierra beige.
+    // Solo aplica en terreno bajo de tipo parque; en zonas rocosas (riscos,
+    // cordillera) no tiene sentido un sendero de grava, así que se excluye
+    // por encima de cierta altura.
     const pathNoise = Math.sin(wx * 0.07 + wz * 0.05) * Math.cos(wx * 0.04 - wz * 0.09);
-    const isPath = pathNoise > 0.72;
+    const isPath = pathNoise > 0.72 && h < 19;
 
     let r, g, b;
     if (isPath) {
       // Sendero de grava/tierra beige — igual que en la imagen
       r = 0.76 + jitter; g = 0.68 + jitter; b = 0.54 + jitter;
+    } else if (h > 220) {
+      // Picos altos de cordillera — nieve
+      const snowVar = Math.sin(wx * 0.05 + 0.7) * Math.cos(wz * 0.045 - 0.2) * 0.5 + 0.5;
+      r = 0.88 + snowVar * 0.06 + jitter * 0.5;
+      g = 0.90 + snowVar * 0.06 + jitter * 0.5;
+      b = 0.94 + snowVar * 0.04 + jitter * 0.5;
+    } else if (h > 110) {
+      // Roca alta de cordillera — gris pardo, transición a nieve en parches
+      const t = Math.min(1, (h - 110) / 110);
+      const rockVar = Math.sin(wx * 0.04 - 0.6) * Math.cos(wz * 0.038 + 1.1) * 0.5 + 0.5;
+      r = 0.40 + rockVar * 0.08 + t * 0.30 + jitter * 0.6;
+      g = 0.37 + rockVar * 0.07 + t * 0.32 + jitter * 0.6;
+      b = 0.34 + rockVar * 0.07 + t * 0.36 + jitter * 0.6;
+    } else if (h > 38) {
+      // Roca de risco / acantilado — pardo-grisáceo con vetas
+      const rockVar = Math.sin(wx * 0.07 + 1.4) * Math.cos(wz * 0.065 - 0.5) * 0.5 + 0.5;
+      const vein = Math.sin(wx * 0.22 + wz * 0.19) * 0.5 + 0.5;
+      r = 0.42 + rockVar * 0.10 + vein * 0.04 + jitter * 0.7;
+      g = 0.36 + rockVar * 0.08 + vein * 0.03 + jitter * 0.7;
+      b = 0.30 + rockVar * 0.07 + jitter * 0.7;
+    } else if (h > 19) {
+      // Terraza/ladera rocosa baja del sector de riscos — tierra/roca oscura
+      // con algo de vegetación rala en las grietas
+      const t = (h - 19) / 19;
+      const rockVar = Math.sin(wx * 0.09 - 0.3) * Math.cos(wz * 0.08 + 0.8) * 0.5 + 0.5;
+      r = 0.30 + t * 0.10 + rockVar * 0.06 + jitter * 0.5;
+      g = 0.30 + t * 0.05 + rockVar * 0.05 + grassVar * 0.04 + jitter * 0.5;
+      b = 0.22 + t * 0.04 + jitter * 0.5;
     } else if (h > 12) {
       // Cimas — pasto más seco/amarillo
       r = 0.48 + jitter; g = 0.52 + jitter; b = 0.22 + jitter;
@@ -990,13 +1561,20 @@ function buildTerrain() {
       g = 0.52 + grassVar * 0.12 + jitter;
       b = 0.18 + jitter;
     } else {
-      // Zona muy baja — césped lush brillante (área de parque)
-      r = 0.26 + grassVar * 0.06 + jitter;
-      g = 0.58 + grassVar * 0.10 + jitter;
-      b = 0.20 + jitter;
+      // Zona muy baja — césped lush brillante (área de parque), o fondo de
+      // quebrada (tierra húmeda oscura) si la altura es negativa
+      if (h < -0.5) {
+        r = 0.20 + grassVar * 0.04 + jitter * 0.4;
+        g = 0.22 + grassVar * 0.05 + jitter * 0.4;
+        b = 0.16 + jitter * 0.4;
+      } else {
+        r = 0.26 + grassVar * 0.06 + jitter;
+        g = 0.58 + grassVar * 0.10 + jitter;
+        b = 0.20 + jitter;
+      }
     }
 
-    const aoFactor = Math.max(0.72, Math.min(1.0, h / 10 + 0.72));
+    const aoFactor = Math.max(0.72, Math.min(1.0, Math.min(h, 10) / 10 + 0.72));
     colors[i * 3]     = Math.max(0, Math.min(1, r * aoFactor));
     colors[i * 3 + 1] = Math.max(0, Math.min(1, g * aoFactor));
     colors[i * 3 + 2] = Math.max(0, Math.min(1, b * aoFactor));
@@ -2323,8 +2901,8 @@ function updatePhysics(dt) {
   }
 
   // Extended world bounds for 4000x4000 scenario
-  SIM.pos.x = Math.max(-560, Math.min(560, SIM.pos.x));
-  SIM.pos.z = Math.max(-560, Math.min(560, SIM.pos.z));
+  SIM.pos.x = Math.max(-900, Math.min(900, SIM.pos.x));
+  SIM.pos.z = Math.max(-900, Math.min(900, SIM.pos.z));
 
   // RTH
   if (SIM.rthActive) {
@@ -2970,6 +3548,7 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
 
+  pollGamepad();
   updatePhysics(dt);
   updateDroneMesh();
   updateCamera(dt);
@@ -3025,6 +3604,9 @@ async function init() {
 
   initThree();
   onTopdownResize();
+
+  loadGamepadMapping();
+  gpScanInitial();
 
   setupJoystick('js-left', 'js-left-knob',
     (x, y) => {
